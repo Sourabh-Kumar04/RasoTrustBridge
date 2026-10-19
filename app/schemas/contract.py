@@ -43,9 +43,11 @@ class MilestoneResponseSchema(BaseModel):
     paypal_capture_id: Optional[str] = None
     paypal_payout_batch_id: Optional[str] = None
     paypal_payout_item_id: Optional[str] = None
+    idempotency_key: Optional[str] = None
     created_at: datetime
     funded_at: Optional[datetime] = None
     submitted_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
     verified_at: Optional[datetime] = None
     released_at: Optional[datetime] = None
     disputed_at: Optional[datetime] = None
@@ -70,6 +72,7 @@ class ContractCreateSchema(BaseModel):
     total_amount: float = Field(..., gt=0)
     fx_strategy: FXStrategy = FXStrategy.LOCKED_AT_SIGNING
     locked_fx_rate: Optional[float] = None
+    buyer_timeout_days: int = Field(default=7, ge=1, le=90, description="Auto-release timeout in days if buyer does not review submitted deliverable")
     milestones: List[MilestoneCreateSchema] = Field(default_factory=list)
 
 
@@ -81,6 +84,21 @@ class AuditLogSchema(BaseModel):
     description: str
     metadata_json: Optional[Dict[str, Any]] = None
     timestamp: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class LedgerEntryResponseSchema(BaseModel):
+    id: str
+    contract_id: str
+    milestone_id: Optional[str] = None
+    entry_type: str
+    amount: float
+    currency: str
+    paypal_reference: Optional[str] = None
+    idempotency_key: Optional[str] = None
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -106,6 +124,9 @@ class ContractResponseSchema(BaseModel):
     status: ContractStatus
     paypal_order_id: Optional[str] = None
     paypal_capture_id: Optional[str] = None
+    buyer_timeout_days: int = 7
+    client_trust_score: Optional[float] = None
+    freelancer_trust_score: Optional[float] = None
     created_at: datetime
     updated_at: datetime
     funded_at: Optional[datetime] = None

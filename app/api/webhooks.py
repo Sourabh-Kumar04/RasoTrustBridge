@@ -33,7 +33,24 @@ async def github_webhook_endpoint(
             detail="Invalid or missing X-Hub-Signature-256 webhook signature",
         )
 
-    # 2. Parse payload
+    # 2. Webhook Deduplication by Delivery ID (X-GitHub-Delivery)
+    if x_github_delivery:
+        from app.services.webhook_dedup_service import webhook_dedup_service
+        is_new = webhook_dedup_service.check_and_record(
+            db=db,
+            delivery_id=x_github_delivery,
+            source="github",
+            event_type=(x_github_event or "unknown").lower(),
+            payload_bytes=raw_body,
+        )
+        if not is_new:
+            return {
+                "status": "duplicate",
+                "delivery_id": x_github_delivery,
+                "message": f"Webhook delivery '{x_github_delivery}' already processed. Deduplicated.",
+            }
+
+    # 3. Parse payload
     try:
         payload = json.loads(raw_body.decode("utf-8"))
     except Exception as e:

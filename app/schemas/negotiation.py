@@ -61,19 +61,23 @@ class NegotiationRequestSchema(BaseModel):
     developer_country: str = Field(default="IN", max_length=8)
     base_currency: str = Field(default="USD", max_length=8)
     payout_currency: str = Field(default="INR", max_length=8)
-    max_rounds: int = Field(default=3, ge=2, le=5, description="Maximum negotiation rounds before convergence")
+    max_rounds: int = Field(default=3, ge=1, le=5, description="Maximum negotiation rounds before convergence")
+    quick_mode: bool = Field(default=True, description="Quick mode: term suggestion + one-round adjustment (default: True)")
+    client_trust_score: Optional[float] = Field(default=None, description="Buyer trust score (0-100)")
+    developer_trust_score: Optional[float] = Field(default=None, description="Seller trust score (0-100)")
     auto_create_contract: bool = Field(default=True, description="Automatically create TrustBridge escrow contract upon agreement")
     force_rule_based: bool = Field(default=False, description="Bypass local Ollama and use deterministic negotiation engine")
 
 
 class NegotiationResponseSchema(BaseModel):
     id: str
-    status: str = Field(..., description="'agreed', 'in_progress', or 'failed'")
+    status: str = Field(..., description="'agreed', 'no_deal', 'in_progress', or 'failed'")
     total_rounds: int
     transcript: List[NegotiationMessageSchema]
     rounds: List[NegotiationRoundSchema]
     agreed_terms: Optional[AgreedTermsSchema] = None
+    termination_reason: Optional[str] = None
     contract_id: Optional[str] = None
     contract: Optional[ContractResponseSchema] = None
-    model_used: str = Field(..., description="Engine used: 'llama3.2:3b' or 'rule_based_fallback'")
+    model_used: str = Field(..., description="Engine used: 'llama3.2:3b', 'gpt-4o', or 'rule_based_fallback'")
     created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -11,13 +11,17 @@ from app.schemas.ai import (
 )
 
 
+from app.services.ai_provider import get_ai_provider
+
+
 class AIContractBuilder:
     """
     Translates plain-English freelance briefs into startup-grade,
     structured contracts with milestone breakdown, verifiable acceptance criteria,
     escrow parameters, and PayPal-native dispute protocol.
     
-    Attempts local Ollama first, with deterministic rule-based template fallback.
+    Supports swappable AI providers: local Ollama (zero-config default) or OpenAI (if configured),
+    with deterministic rule-based template fallback.
     No external API keys required.
     """
 
@@ -30,10 +34,11 @@ class AIContractBuilder:
         force_rule_based: bool = False,
     ) -> AIContractResponseSchema:
         if not force_rule_based and self.settings.ENVIRONMENT != "testing":
-            # 1. Try local Ollama if available
-            ollama_result = await self._try_ollama_generation(req)
-            if ollama_result:
-                return ollama_result
+            # 1. Try active AI provider (Ollama or OpenAI)
+            provider = get_ai_provider()
+            ai_result = await provider.generate_contract(req)
+            if ai_result:
+                return ai_result
 
         # 2. Resilient Rule-based template generator
         return self._generate_rule_based_contract(req)

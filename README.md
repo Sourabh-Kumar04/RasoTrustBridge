@@ -1,13 +1,14 @@
 # TrustBridge
 ### The Programmable Trust Layer for International Freelancing
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-black.svg)](LICENSE)
+[![License: PolyForm Noncommercial 1.0.0](https://img.shields.io/badge/License-PolyForm%20Noncommercial%201.0.0-black.svg)](LICENSE)
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-black.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-black.svg)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%7C%20Default-blue.svg)](https://www.postgresql.org/)
 [![PayPal Sandbox](https://img.shields.io/badge/PayPal-Orders%20%26%20Payouts%20Sandbox-003087.svg)](https://developer.paypal.com/)
-[![Tests](https://img.shields.io/badge/Tests-30%20Passed%20%7C%20Green-brightgreen.svg)]()
-[![Ollama](https://img.shields.io/badge/Ollama-llama3.2%3A3b%20Local-blue.svg)](https://ollama.com/)
-[![Phase 3](https://img.shields.io/badge/Phase%203-Complete%20%28Webhooks%20%2B%20E2E%29-black.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-Green-brightgreen.svg)]()
+[![AI Providers](https://img.shields.io/badge/AI-Ollama%20%26%20OpenAI-purple.svg)]()
+[![Phase 5](https://img.shields.io/badge/Phase%205-Mentor%20Flaws%20Fixed-black.svg)]()
 
 ---
 
@@ -242,20 +243,30 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-## 11. Honest Limitations & Product Roadmap
+### Phase 5: Production Hardening & Mentor Flaw Remediation (Delivered)
+Addressed all architectural and structural flaws identified by payment systems mentors:
+1. **PostgreSQL as Default**: Replaced SQLite WAL default with PostgreSQL via `DATABASE_URL` (SQLite retained solely as local dev fallback). Comprehensive Alembic migrations for all database models (`alembic upgrade head`). Updated `docker-compose.yml`, `docs/DEPLOYMENT.md`, and `.env.example`.
+2. **Idempotency & Webhook Deduplication**: Added `idempotency_key` columns across all money-movement records (`EscrowHold`, `Milestone`, `LedgerEntry`). Generated idempotency keys for all PayPal calls (`PayPal-Request-Id`). Implemented persistent webhook deduplication for GitHub (`X-GitHub-Delivery`) and PayPal (`paypal-transmission-id`), returning HTTP 200 on duplicates without reprocessing.
+3. **Event-Sourced Financial Ledger**: Built immutable, append-only `LedgerEntry` model enforcing append-only semantics. Every financial movement writes a ledger record first; state is derived from ledger events. Added `scripts/reconcile.py` for automated reconciliation auditing against payment gateway records.
+4. **Buyer Timeout & Auto-Release**: Added `milestone.expires_at` (configurable per contract via `buyer_timeout_days`, default 7 days after submission). Added maintenance endpoint `POST /api/v1/milestones/check-expiry` that auto-transitions expired submissions to `VERIFIED` with audit log `"auto-released: buyer timeout"`.
+5. **Reputation & Trust Score**: Implemented dynamic `User.trust_score` (0-100, default 50.0), `completed_deals`, and `disputed_deals`. Weighted scoring updates on releases (+5), disputes (-10), and arbitrations (+/-5). Displayed on user profiles, contract views, and injected into negotiator reasoning.
+6. **Negotiator Walk-Away & Quick Mode**: Agents terminate with `NO_DEAL` if terms are irreconcilable (price gap > 40% or 3 rounds with zero movement). Added single-round "Quick Mode" (term suggestion + adjustment) as the default mode.
+7. **FX Simplification**: Standardized `LOCKED_AT_SIGNING` as primary UI default, de-emphasizing floating modes as advanced options.
+8. **Swappable AI Provider**: Abstract `AIProvider` interface supporting local `OllamaProvider` (zero-config default) and `OpenAIProvider` (via `OPENAI_API_KEY`).
 
-### Delivered Scope (Phases 1, 2, and 3 — Complete)
-- **Phase 1 (Complete)**: Full Python/FastAPI backend, SQLAlchemy ORM, 20 initial tests, local Ollama + rule template contract builder, FX risk simulator, PayPal Orders/Payouts sandbox gateway, milestone state machine, and dispute packaging engine.
-- **Phase 2A (Complete)**: Stripe/Linear-grade minimal frontend, strict hairline dividers, pure white background, generous whitespace, zero card clutter, tabular typography, and interactive routing.
-- **Phase 2B (Complete)**: Autonomous Agent-to-Agent Negotiator with local Ollama (`llama3.2:3b`) multi-round deliberation, chain-of-thought strategy extraction, price convergence, and programmatic escrow contract creation.
-- **Phase 3 (Complete)**: GitHub Webhook Verification Engine with cryptographic HMAC-SHA256 validation (`POST /api/v1/webhooks/github`). Automatically parses PR branch/title/commits, submits deliverables, triggers AI evaluation, and transitions milestones to `VERIFIED`. Push commit SHA tracking for delivery proof. PayPal Sandbox Readiness Guide (`docs/PAYPAL_SANDBOX_GUIDE.md`), interactive verification script (`scripts/test_paypal_sandbox.py`), live curl simulation (`scripts/simulate_webhook_curl.sh`), and full lifecycle End-to-End integration test (`tests/test_e2e_lifecycle.py`). 30/30 tests green.
+### Running the Financial Ledger Reconciliation Script
+```bash
+# Run reconciliation across all active contracts:
+python scripts/reconcile.py
 
-### Phase 4: Production Compliance & Reputation Staking (Upcoming)
-- PayPal Commerce Platform production onboarding and multi-party escrow agreements.
-- Cross-border tax compliance (W-8BEN handling) and freelancer reputation staking protocols.
+# Reconcile a specific contract:
+python scripts/reconcile.py --contract-id ct_your_contract_id
+```
 
 ---
 
-## 12. License
+## 12. Legal & Licensing Notice
 
-This project is licensed under the terms of the [MIT License](LICENSE).
+This software is licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE).
+- **Permitted Use**: Noncommercial research, personal study, experimentation, testing, and educational evaluation.
+- **Commercial Deployment**: Commercial production operation requires formal commercial licensing and legal review for jurisdictional payment regulations, cross-border tax compliance, and escrow licensing. Legal and regulatory compliance requires consultation with qualified legal counsel.

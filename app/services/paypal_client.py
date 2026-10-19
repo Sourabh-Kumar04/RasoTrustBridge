@@ -11,12 +11,15 @@ class PayPalClient:
     and Payouts API (releasing funds to international freelancers).
     Gracefully falls back to deterministic sandbox simulation when credentials
     are not configured in the environment.
+    Includes comprehensive idempotency handling with PayPal-Request-Id headers
+    and duplicate call detection.
     """
 
     def __init__(self):
         self.settings = get_settings()
         self._access_token: Optional[str] = None
         self._token_expires_at: float = 0.0
+        self._idempotency_store: Dict[str, Dict[str, Any]] = {}
 
     @property
     def is_configured(self) -> bool:
@@ -56,27 +59,38 @@ class PayPalClient:
         currency: str = "USD",
         return_url: str = "https://trustbridge.network/checkout/success",
         cancel_url: str = "https://trustbridge.network/checkout/cancel",
+        idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Creates a PayPal Order to hold / authorize funds in escrow.
-        Uses POST /v2/checkout/orders with intent=CAPTURE.
+        Uses POST /v2/checkout/orders with intent=CAPTURE and idempotency key.
         """
+        idem_key = idempotency_key or f"order_{contract_id}_{int(amount * 100)}_{currency.upper()}"
+        if idem_key in self._idempotency_store:
+            cached = dict(self._idempotency_store[idem_key])
+            cached["idempotency_replayed"] = True
+            return cached
+
         if not self.is_configured:
             order_id = f"ORDER-SANDBOX-{uuid.uuid4().hex[:10].upper()}"
-            return {
+            res = {
                 "order_id": order_id,
                 "status": "CREATED",
                 "approve_url": f"https://www.sandbox.paypal.com/checkoutnow?token={order_id}",
                 "amount": amount,
                 "currency": currency,
                 "mock": True,
+                "idempotency_key": idem_key,
             }
+            self._idempotency_store[idem_key] = res
+            return res
 
         token = await self.get_access_token()
         url = f"{self.settings.PAYPAL_API_BASE}/v2/checkout/orders"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
+            "PayPal-Request-Id": idem_key,
         }
         payload = {
             "intent": "CAPTURE",
@@ -110,35 +124,52 @@ class PayPalClient:
                     approve_url = link.get("href")
                     break
 
-            return {
+            res = {
                 "order_id": data.get("id"),
                 "status": data.get("status", "CREATED"),
                 "approve_url": approve_url,
                 "amount": amount,
                 "currency": currency,
                 "mock": False,
+                "idempotency_key": idem_key,
             }
+            self._idempotency_store[idem_key] = res
+            return res
 
-    async def capture_order(self, order_id: str) -> Dict[str, Any]:
+    async def capture_order(
+        self,
+        order_id: str,
+        idempotency_key: Optional[str] = None,
+    ) -> Dict[str, Any]:
         """
         Captures previously approved order into escrow balance.
-        Uses POST /v2/checkout/orders/{id}/capture.
+        Uses POST /v2/checkout/orders/{id}/capture with idempotency support.
         """
+        idem_key = idempotency_key or f"capture_{order_id}"
+        if idem_key in self._idempotency_store:
+            cached = dict(self._idempotency_store[idem_key])
+            cached["idempotency_replayed"] = True
+            return cached
+
         if not self.is_configured or order_id.startswith("ORDER-SANDBOX-"):
             capture_id = f"CAP-SANDBOX-{uuid.uuid4().hex[:10].upper()}"
-            return {
+            res = {
                 "order_id": order_id,
                 "capture_id": capture_id,
                 "status": "COMPLETED",
                 "amount_captured": 0.0,
                 "mock": True,
+                "idempotency_key": idem_key,
             }
+            self._idempotency_store[idem_key] = res
+            return res
 
         token = await self.get_access_token()
         url = f"{self.settings.PAYPAL_API_BASE}/v2/checkout/orders/{order_id}/capture"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
+            "PayPal-Request-Id": idem_key,
         }
 
         async with httpx.AsyncClient(timeout=12.0) as client:
@@ -159,14 +190,17 @@ class PayPalClient:
             except Exception:
                 pass
 
-            return {
+            res = {
                 "order_id": data.get("id", order_id),
                 "capture_id": capture_id or f"CAP-{data.get('id', 'UNKNOWN')}",
                 "status": data.get("status", "COMPLETED"),
                 "amount_captured": amount_captured,
                 "currency": currency,
                 "mock": False,
+                "idempotency_key": idem_key,
             }
+            self._idempotency_store[idem_key] = res
+            return res
 
     async def create_payout(
         self,
@@ -175,15 +209,23 @@ class PayPalClient:
         currency: str = "USD",
         note: str = "TrustBridge Milestone Release",
         sender_item_id: str = "",
+        idempotency_key: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Releases funds to international freelancer via PayPal Payouts API.
-        Uses POST /v1/payments/payouts.
+        Uses POST /v1/payments/payouts with PayPal-Request-Id header.
+        Guarantees that repeated calls with same idempotency_key only execute once.
         """
+        idem_key = idempotency_key or (f"payout_{sender_item_id}" if sender_item_id else f"payout_{recipient_email}_{int(amount * 100)}")
+        if idem_key in self._idempotency_store:
+            cached = dict(self._idempotency_store[idem_key])
+            cached["idempotency_replayed"] = True
+            return cached
+
         if not self.is_configured:
             batch_id = f"PAYOUT-SANDBOX-BATCH-{uuid.uuid4().hex[:8].upper()}"
             item_id = f"PAYOUT-ITEM-{uuid.uuid4().hex[:8].upper()}"
-            return {
+            res = {
                 "payout_batch_id": batch_id,
                 "payout_item_id": item_id,
                 "status": "SUCCESS",
@@ -191,13 +233,17 @@ class PayPalClient:
                 "currency": currency,
                 "recipient_email": recipient_email,
                 "mock": True,
+                "idempotency_key": idem_key,
             }
+            self._idempotency_store[idem_key] = res
+            return res
 
         token = await self.get_access_token()
         url = f"{self.settings.PAYPAL_API_BASE}/v1/payments/payouts"
         headers = {
             "Content-Type": "application/json",
             "Authorization": f"Bearer {token}",
+            "PayPal-Request-Id": idem_key,
         }
         batch_id = f"batch_{uuid.uuid4().hex[:12]}"
         payload = {
@@ -225,7 +271,7 @@ class PayPalClient:
             response.raise_for_status()
             data = response.json()
             batch_header = data.get("batch_header", {})
-            return {
+            res = {
                 "payout_batch_id": batch_header.get("payout_batch_id", batch_id),
                 "payout_item_id": sender_item_id,
                 "status": batch_header.get("batch_status", "PENDING"),
@@ -233,7 +279,10 @@ class PayPalClient:
                 "currency": currency,
                 "recipient_email": recipient_email,
                 "mock": False,
+                "idempotency_key": idem_key,
             }
+            self._idempotency_store[idem_key] = res
+            return res
 
 
 paypal_client = PayPalClient()

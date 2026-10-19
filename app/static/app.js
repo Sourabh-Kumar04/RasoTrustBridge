@@ -145,7 +145,7 @@ const TrustBridgeApp = {
           </div>
           <div class="hidden sm:flex flex-col text-left text-xs leading-tight">
             <span class="font-medium text-slate-900">${this.escapeHtml(u.display_name)}</span>
-            <span class="text-[10px] text-slate-500 font-mono">${roleBadge}</span>
+            <span class="text-[10px] text-slate-500 font-mono">${roleBadge} • <span class="text-emerald-700 font-semibold">Trust: ${u.trust_score ?? 50}/100</span></span>
           </div>
           <button onclick="TrustBridgeApp.logout()" class="btn-subtle text-xs py-1 px-2 text-slate-500 hover:text-red-600">
             Log Out
@@ -872,8 +872,13 @@ const TrustBridgeApp = {
 
     document.getElementById('detail-client-name').textContent = c.client_name;
     document.getElementById('detail-client-email').textContent = `${c.client_email} (${c.client_country})`;
+    const clientTrustEl = document.getElementById('detail-client-trust');
+    if (clientTrustEl) clientTrustEl.textContent = `Trust Score: ${(c.client_trust_score ?? 50.0).toFixed(1)}/100`;
+
     document.getElementById('detail-dev-name').textContent = c.developer_name;
     document.getElementById('detail-dev-email').textContent = `${c.developer_email} (${c.developer_country})`;
+    const devTrustEl = document.getElementById('detail-dev-trust');
+    if (devTrustEl) devTrustEl.textContent = `Trust Score: ${(c.freelancer_trust_score ?? 50.0).toFixed(1)}/100`;
 
     const rate = c.locked_fx_rate || 84.50;
     const payoutEst = (c.total_amount * rate).toLocaleString('en-US', { maximumFractionDigits: 2 });

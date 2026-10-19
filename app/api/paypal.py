@@ -1,4 +1,7 @@
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request, Response, Depends, Header
+from sqlalchemy.orm import Session
+from typing import Optional
+from app.database import get_db
 from app.schemas.paypal import (
     CreateOrderRequest,
     CreateOrderResponse,
@@ -6,6 +9,7 @@ from app.schemas.paypal import (
     CaptureOrderResponse,
 )
 from app.services.paypal_client import paypal_client
+from app.services.webhook_dedup_service import webhook_dedup_service
 
 router = APIRouter(prefix="/paypal", tags=["PayPal Sandbox Gateway"])
 
@@ -59,18 +63,50 @@ async def capture_paypal_order(
 
 
 @router.post("/webhook")
-async def paypal_webhook(request: Request):
+async def paypal_webhook(
+    request: Request,
+    db: Session = Depends(get_db),
+    paypal_transmission_id: Optional[str] = Header(None, alias="paypal-transmission-id"),
+):
     """
     Listens for PayPal sandbox webhook events (e.g. PAYMENT.CAPTURE.COMPLETED, CHECKOUT.ORDER.APPROVED).
+    Deduplicates events by transmission/event ID with 200 response.
     """
     try:
-        payload = await request.json()
+        raw_body = await request.body()
+        payload = {}
+        if raw_body:
+            import json
+            try:
+                payload = json.loads(raw_body.decode("utf-8"))
+            except Exception:
+                pass
+
+        delivery_id = paypal_transmission_id or payload.get("id")
         event_type = payload.get("event_type")
         resource_id = payload.get("resource", {}).get("id")
+
+        if delivery_id:
+            is_new = webhook_dedup_service.check_and_record(
+                db=db,
+                delivery_id=delivery_id,
+                source="paypal",
+                event_type=event_type,
+                payload_bytes=raw_body,
+            )
+            if not is_new:
+                return {
+                    "status": "duplicate",
+                    "delivery_id": delivery_id,
+                    "transmission_id": delivery_id,
+                    "message": f"PayPal webhook delivery '{delivery_id}' already processed. Deduplicated.",
+                }
+
         return {
             "status": "received",
             "event_type": event_type,
             "resource_id": resource_id,
+            "delivery_id": delivery_id,
         }
     except Exception:
         return Response(status_code=200)

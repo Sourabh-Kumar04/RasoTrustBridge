@@ -671,9 +671,11 @@
             <div>
               <label class="block font-mono text-xs uppercase text-slate-500 mb-1">FX Strategy</label>
               <select id="builder-fx-strat" class="form-select font-mono text-xs">
-                <option value="LOCKED_AT_SIGNING" selected>LOCKED_AT_SIGNING (0% Slippage)</option>
-                <option value="SPLIT_RISK">SPLIT_RISK (50/50 Buffer)</option>
-                <option value="AT_SETTLEMENT">AT_SETTLEMENT (Spot Market)</option>
+                <option value="LOCKED_AT_SIGNING" selected>★ LOCKED_AT_SIGNING (Primary: Guaranteed Payout, Zero Slippage)</option>
+                <optgroup label="Advanced FX Strategies (Discretionary)">
+                  <option value="SPOT_AT_RELEASE">SPOT_AT_RELEASE (Floating Market Rate)</option>
+                  <option value="SPLIT_RISK">SPLIT_RISK (50/50 Shared Currency Volatility)</option>
+                </optgroup>
               </select>
             </div>
           </div>
@@ -753,11 +755,13 @@
           <div class="font-mono text-xs text-slate-400 uppercase">Client (Buyer)</div>
           <div class="font-semibold text-slate-900" id="detail-client-name">Sarah Jenkins</div>
           <div class="font-mono text-xs text-slate-500" id="detail-client-email">sarah@acme.com (US)</div>
+          <div class="font-mono text-xs text-emerald-700 font-medium" id="detail-client-trust">Trust Score: 50.0/100</div>
         </div>
         <div class="p-6 space-y-1">
           <div class="font-mono text-xs text-slate-400 uppercase">Developer (Seller)</div>
           <div class="font-semibold text-slate-900" id="detail-dev-name">Arjun Patel</div>
           <div class="font-mono text-xs text-slate-500" id="detail-dev-email">arjun@devstudio.in (IN)</div>
+          <div class="font-mono text-xs text-emerald-700 font-medium" id="detail-dev-trust">Trust Score: 50.0/100</div>
         </div>
         <div class="p-6 space-y-1">
           <div class="font-mono text-xs text-slate-400 uppercase">Escrow Total & FX</div>

@@ -12,11 +12,25 @@ from app.schemas.milestone import (
     MilestoneDisputeRequest,
     DisputeResponseSchema,
 )
+from typing import List
 from app.services.contract_service import contract_service
 from app.api.deps import get_current_user
 from app.api.contracts import check_contract_access
 
 router = APIRouter(prefix="/milestones", tags=["Milestones"])
+
+
+@router.post("/check-expiry", response_model=List[MilestoneResponseSchema])
+async def check_milestones_expiry(
+    db: Session = Depends(get_db),
+):
+    """
+    Background worker / maintenance endpoint:
+    Scans submitted milestones past their buyer timeout expiry date with no buyer action,
+    auto-transitioning them to VERIFIED status with audit log 'auto-released: buyer timeout'.
+    """
+    return await contract_service.check_and_auto_release_expired_milestones(db)
+
 
 
 @router.get("/{milestone_id}", response_model=MilestoneResponseSchema)

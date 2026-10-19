@@ -55,6 +55,11 @@ class DisputeService:
             metadata_json={"dispute_reason": reason, "initiator": initiator_role.value},
         )
         db.add(audit)
+
+        # Update reputation penalty
+        from app.services.reputation_service import reputation_service
+        reputation_service.record_dispute_opened(db, contract.client_user, contract.freelancer_user)
+
         db.commit()
         db.refresh(dispute)
         return dispute
@@ -74,11 +79,34 @@ class DisputeService:
         contract = dispute.contract
         milestone = dispute.milestone
 
+        from app.services.ledger_service import ledger_service
+        from app.models.enums import LedgerEntryType
+        from app.services.reputation_service import reputation_service
+
         if resolution_status == DisputeStatus.RESOLVED_DEVELOPER_PAYOUT:
             milestone.status = MilestoneStatus.RELEASED
             milestone.released_at = datetime.now(timezone.utc)
         elif resolution_status == DisputeStatus.RESOLVED_CLIENT_REFUND:
+            # Write ledger entry FIRST
+            ledger_service.record_entry(
+                db=db,
+                contract_id=contract.id,
+                milestone_id=milestone.id,
+                entry_type=LedgerEntryType.REFUND_ISSUED,
+                amount=milestone.amount,
+                currency=contract.base_currency,
+                paypal_reference=f"dispute_{dispute.id}",
+                idempotency_key=f"refund_{dispute.id}",
+            )
             milestone.status = MilestoneStatus.CANCELLED if hasattr(MilestoneStatus, "CANCELLED") else MilestoneStatus.PENDING
+
+        # Update reputation based on arbitration decision
+        reputation_service.record_dispute_resolution(
+            db=db,
+            client=contract.client_user,
+            freelancer=contract.freelancer_user,
+            resolution_status=resolution_status,
+        )
 
         # Check if all other milestones are resolved
         active_disputes = (

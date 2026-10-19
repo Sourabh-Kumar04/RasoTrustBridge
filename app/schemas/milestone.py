@@ -21,6 +21,7 @@ class MilestoneVerifyRequest(BaseModel):
 class MilestoneReleaseRequest(BaseModel):
     release_note: Optional[str] = Field("Milestone approved and funds released via PayPal Payouts", description="Release remarks")
     override_payout_rate: Optional[float] = Field(None, description="Optional manual FX rate override for release calculation")
+    idempotency_key: Optional[str] = Field(None, description="Client idempotency key for preventing duplicate payout execution")
 
 
 class MilestoneDisputeRequest(BaseModel):

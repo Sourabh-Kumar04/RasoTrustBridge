@@ -10,8 +10,10 @@ from app.models.user import User
 from app.schemas.contract import (
     ContractCreateSchema,
     ContractResponseSchema,
+    LedgerEntryResponseSchema,
 )
 from app.services.contract_service import contract_service
+from app.services.ledger_service import ledger_service
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
@@ -20,6 +22,7 @@ router = APIRouter(prefix="/contracts", tags=["Contracts"])
 class FundContractPayload(BaseModel):
     paypal_order_id: str
     paypal_capture_id: Optional[str] = None
+    idempotency_key: Optional[str] = None
 
 
 def check_contract_access(contract: Contract, user: User) -> None:
@@ -93,7 +96,10 @@ def list_contracts(
                 Contract.developer_email.ilike(u_email),
             )
         )
-    return query.order_by(Contract.created_at.desc()).offset(skip).limit(limit).all()
+    contracts = query.order_by(Contract.created_at.desc()).offset(skip).limit(limit).all()
+    for c in contracts:
+        contract_service._attach_trust_scores(c)
+    return contracts
 
 
 @router.get("/{contract_id}", response_model=ContractResponseSchema)
@@ -111,6 +117,7 @@ def get_contract(
         raise HTTPException(status_code=404, detail="Contract not found")
 
     check_contract_access(contract, current_user)
+    contract_service._attach_trust_scores(contract)
     return contract
 
 
@@ -136,4 +143,23 @@ async def fund_contract(
         contract_id=contract_id,
         paypal_order_id=payload.paypal_order_id,
         paypal_capture_id=payload.paypal_capture_id,
+        idempotency_key=payload.idempotency_key,
     )
+
+
+@router.get("/{contract_id}/ledger", response_model=List[LedgerEntryResponseSchema])
+def get_contract_ledger(
+    contract_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Retrieves the immutable, append-only event-sourced financial ledger entries for this contract.
+    """
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    check_contract_access(contract, current_user)
+    return ledger_service.get_entries(db, contract_id=contract_id)
+

@@ -26,6 +26,9 @@ class UserResponseSchema(BaseModel):
     email: str
     role: str
     display_name: str
+    trust_score: float = 50.0
+    completed_deals: int = 0
+    disputed_deals: int = 0
     created_at: datetime
 
 
