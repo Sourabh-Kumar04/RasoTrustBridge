@@ -29,6 +29,9 @@ class Settings(BaseSettings):
     PAYPAL_API_BASE: str = "https://api-m.sandbox.paypal.com"
     PAYPAL_WEBHOOK_ID: Optional[str] = None
 
+    # GitHub Webhook Secret
+    GITHUB_WEBHOOK_SECRET: Optional[str] = "trustbridge_github_webhook_secret_dev"
+
     # AI Contract Builder (Local Ollama)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2:3b"
