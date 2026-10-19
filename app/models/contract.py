@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Float, Text, DateTime, ForeignKey, Enum as SQLEnum
+from sqlalchemy import Column, String, Float, Text, DateTime, Integer, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.enums import ContractStatus, FXStrategy
@@ -53,6 +53,7 @@ class Contract(Base):
     # PayPal Escrow References
     paypal_order_id = Column(String(128), nullable=True)
     paypal_capture_id = Column(String(128), nullable=True)
+    buyer_timeout_days = Column(Integer, nullable=False, default=7)
     
     # Timestamps
     created_at = Column(
@@ -96,4 +97,10 @@ class Contract(Base):
         "DisputeRecord",
         back_populates="contract",
         cascade="all, delete-orphan",
+    )
+    ledger_entries = relationship(
+        "LedgerEntry",
+        back_populates="contract",
+        cascade="all, delete-orphan",
+        order_by="LedgerEntry.created_at",
     )

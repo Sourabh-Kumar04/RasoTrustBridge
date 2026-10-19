@@ -251,10 +251,26 @@ Configure your uptime monitoring service (e.g., BetterStack, Pingdom, or AWS Rou
 
 ---
 
-## 8. Database Migrations & Maintenance
+## 8. Database Migrations & Maintenance (Alembic + PostgreSQL)
 
-- Database schemas are initialized automatically upon container startup via `init_db()` in `app/main.py` lifespan context.
-- When migrating from SQLite to PostgreSQL, all foreign keys (`client_id`, `freelancer_id`), indexes, and unique constraints are created automatically.
+PostgreSQL is the default production and development database configured via `DATABASE_URL`. SQLite is preserved as a zero-setup local dev fallback.
+
+### Running Alembic Migrations:
+TrustBridge uses **Alembic** for reproducible database schema migrations across all models (Users, Contracts, Milestones, AuditLogs, Disputes, EscrowHolds, Notifications, LedgerEntries, and ProcessedWebhookDeliveries):
+
+```bash
+# Run migrations to bring database up to date
+alembic upgrade head
+
+# Create a new migration revision after model changes
+alembic revision --autogenerate -m "describe_change"
+
+# Check migration history and current head
+alembic current
+alembic history
+```
+
+- When running in Docker Compose or containerized environments, database schemas can be migrated via `alembic upgrade head` or auto-initialized via `init_db()` in `app/main.py` lifespan.
 - **Automated Database Backups (PostgreSQL):**
   ```bash
   # Daily cron backup command:

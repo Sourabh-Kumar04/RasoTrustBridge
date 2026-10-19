@@ -109,6 +109,7 @@ class EscrowHold(Base):
     paypal_order_id = Column(String(128), nullable=False)
     paypal_capture_id = Column(String(128), nullable=True)
     paypal_status = Column(String(64), nullable=False)  # CREATED, APPROVED, COMPLETED
+    idempotency_key = Column(String(128), unique=True, index=True, nullable=True)
     
     created_at = Column(
         DateTime(timezone=True),

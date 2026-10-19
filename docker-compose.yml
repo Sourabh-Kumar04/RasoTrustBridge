@@ -24,6 +24,7 @@ services:
       - PAYPAL_API_BASE=${PAYPAL_API_BASE:-https://api-m.sandbox.paypal.com}
       - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-trustbridge_github_webhook_secret_dev}
       - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - FX_RATES_API_URL=https://open.er-api.com/v6/latest/USD
       - FX_CACHE_TTL_SECONDS=3600
     depends_on:

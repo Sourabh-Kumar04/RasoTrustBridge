@@ -26,7 +26,8 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # Database
-    DATABASE_URL: str = "sqlite:///./trustbridge.db"
+    # PostgreSQL is the default production and development database; SQLite is dev fallback
+    DATABASE_URL: str = "postgresql://trustbridge:trustbridge_secret@localhost:5432/trustbridge"
 
     # PayPal REST API Sandbox
     PAYPAL_CLIENT_ID: Optional[str] = None
@@ -38,10 +39,13 @@ class Settings(BaseSettings):
     # GitHub Webhook Secret
     GITHUB_WEBHOOK_SECRET: Optional[str] = "trustbridge_github_webhook_secret_dev"
 
-    # AI Contract Builder (Local Ollama)
+    # AI Swappable Provider (Ollama zero-config default vs OpenAI)
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama3.2:3b"
     OLLAMA_TIMEOUT_SECONDS: float = 15.0
+    OPENAI_API_KEY: Optional[str] = None
+    OPENAI_MODEL: str = "gpt-4o"
+    OPENAI_TIMEOUT_SECONDS: float = 15.0
 
     # FX Service
     FX_RATES_API_URL: str = "https://open.er-api.com/v6/latest/USD"

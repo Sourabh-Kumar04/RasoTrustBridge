@@ -55,6 +55,7 @@ class Milestone(Base):
     paypal_capture_id = Column(String(128), nullable=True)
     paypal_payout_batch_id = Column(String(128), nullable=True)
     paypal_payout_item_id = Column(String(128), nullable=True)
+    idempotency_key = Column(String(128), nullable=True, index=True)
     
     # Lifecycle Timestamps
     created_at = Column(
@@ -64,6 +65,7 @@ class Milestone(Base):
     )
     funded_at = Column(DateTime(timezone=True), nullable=True)
     submitted_at = Column(DateTime(timezone=True), nullable=True)
+    expires_at = Column(DateTime(timezone=True), nullable=True, index=True)
     verified_at = Column(DateTime(timezone=True), nullable=True)
     released_at = Column(DateTime(timezone=True), nullable=True)
     disputed_at = Column(DateTime(timezone=True), nullable=True)
