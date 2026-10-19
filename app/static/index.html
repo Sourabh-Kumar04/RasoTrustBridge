@@ -64,7 +64,7 @@
         </div>
         <div class="flex items-baseline space-x-2">
           <span class="font-semibold text-lg tracking-tight text-slate-900 group-hover:opacity-80 transition">TrustBridge</span>
-          <span class="font-mono text-[10px] text-slate-400 uppercase tracking-widest">Phase 2</span>
+          <span class="font-mono text-[10px] text-slate-400 uppercase tracking-widest">Phase 4</span>
         </div>
       </a>
 
@@ -85,13 +85,58 @@
         </a>
       </nav>
 
-      <!-- ACTION BUTTONS -->
-      <div class="flex items-center space-x-3">
-        <a href="#/negotiate" class="btn-primary text-xs">
-          <span>Launch Negotiator</span>
-          <span>→</span>
-        </a>
+      <!-- RIGHT ACTIONS: NOTIFICATIONS + AUTH + MOBILE TOGGLE -->
+      <div class="flex items-center space-x-2 sm:space-x-4">
+        
+        <!-- NOTIFICATION BELL & DROPDOWN -->
+        <div class="relative">
+          <button id="notif-bell-btn" onclick="TrustBridgeApp.toggleNotificationsDropdown()" aria-label="Notifications" class="p-2 text-slate-500 hover:text-slate-900 transition relative rounded-full hover:bg-slate-100 focus:outline-none">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+            <span id="notif-badge" class="hidden absolute top-1 right-1 bg-red-600 text-white font-mono text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+          </button>
+
+          <!-- NOTIFICATIONS DROPDOWN PANEL -->
+          <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white hairline-all shadow-xl rounded-md z-50 overflow-hidden">
+            <div class="px-4 py-3 hairline-b bg-[#FAFAFA] flex items-center justify-between">
+              <span class="font-semibold text-xs tracking-wider text-slate-900 uppercase font-mono">Notifications</span>
+              <button onclick="TrustBridgeApp.markAllNotificationsRead()" class="text-[11px] text-blue-600 hover:text-blue-800 font-medium">Mark all read</button>
+            </div>
+            <div id="notif-list" class="max-h-80 overflow-y-auto divide-y divide-slate-100">
+              <div class="p-6 text-center text-xs text-slate-400 font-mono">No new notifications</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- AUTH PROFILE / SIGN IN CONTAINER -->
+        <div id="auth-nav-container" class="flex items-center space-x-2">
+          <button onclick="TrustBridgeApp.openAuthModal('login')" class="btn-secondary text-xs py-1.5 px-3">
+            Sign In
+          </button>
+          <button onclick="TrustBridgeApp.openAuthModal('register')" class="btn-primary text-xs py-1.5 px-3 hidden sm:inline-flex">
+            Register
+          </button>
+        </div>
+
+        <!-- MOBILE HAMBURGER MENU BUTTON -->
+        <button id="mobile-menu-btn" onclick="TrustBridgeApp.toggleMobileMenu()" aria-label="Toggle Navigation" class="md:hidden p-2 text-slate-700 hover:text-slate-950 focus:outline-none">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
       </div>
+    </div>
+
+    <!-- MOBILE NAVIGATION DRAWER -->
+    <div id="mobile-nav-drawer" class="hidden md:hidden hairline-t bg-[#FAFAFA] px-6 py-4 space-y-3 font-medium text-sm">
+      <a href="#/" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-900 py-1.5 hover:text-blue-600">Overview</a>
+      <a href="#/dashboard" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-600 py-1.5 hover:text-blue-600">Dashboard</a>
+      <a href="#/negotiate" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-600 py-1.5 hover:text-blue-600 flex items-center justify-between">
+        <span>AI Negotiator</span>
+        <span class="font-mono text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">2 Agents</span>
+      </a>
+      <a href="#/builder" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-600 py-1.5 hover:text-blue-600">Contract Builder</a>
     </div>
   </header>
 
@@ -106,30 +151,30 @@
     <!-- ================================================================= -->
     <section id="view-landing" class="view-panel space-y-20 py-8">
       <!-- HERO SECTION -->
-      <div class="max-w-4xl space-y-8">
-        <div class="inline-flex items-center space-x-2 font-mono text-xs uppercase tracking-wider text-slate-600 hairline-all px-3 py-1 bg-[#FAFAFA] rounded-sm">
-          <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-          <span>Programmable Trust for Cross-Border Freelance</span>
+      <div class="max-w-4xl space-y-6 sm:space-y-8">
+        <div class="inline-flex items-center space-x-2 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-slate-600 hairline-all px-2.5 py-1 bg-[#FAFAFA] rounded-sm max-w-full">
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
+          <span class="truncate">Programmable Trust for Cross-Border Freelance</span>
         </div>
 
-        <h1 class="text-4xl md:text-6xl font-semibold tracking-tight text-slate-900 leading-[1.12]">
+        <h1 class="text-3xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-slate-900 leading-[1.15]">
           Escrow that writes its own code, guarantees foreign exchange, and releases on proof.
         </h1>
 
-        <p class="text-lg md:text-xl text-slate-600 leading-relaxed max-w-3xl font-normal">
+        <p class="text-base sm:text-lg md:text-xl text-slate-600 leading-relaxed max-w-3xl font-normal">
           Eliminate freelance payment anxiety. Autonomous buyer and seller AI agents negotiate deal terms, 
           PayPal sandbox holds dual-custody funds, and automated test runners verify code deliverables before releasing guaranteed FX payouts.
         </p>
 
-        <div class="flex flex-wrap items-center gap-4 pt-4">
-          <a href="#/negotiate" class="btn-primary text-sm px-6 py-3">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 sm:pt-4">
+          <a href="#/negotiate" class="btn-primary text-xs sm:text-sm px-5 py-2.5 sm:px-6 sm:py-3 text-center">
             <span>Run Agent-to-Agent Negotiation</span>
             <span>→</span>
           </a>
-          <a href="#/builder" class="btn-secondary text-sm px-6 py-3">
+          <a href="#/builder" class="btn-secondary text-xs sm:text-sm px-5 py-2.5 sm:px-6 sm:py-3 text-center">
             <span>Build Contract from Brief</span>
           </a>
-          <a href="#/dashboard" class="btn-subtle text-sm px-4 py-3">
+          <a href="#/dashboard" class="btn-subtle text-xs sm:text-sm px-4 py-2.5 sm:py-3 text-center">
             <span>Open Dashboard</span>
           </a>
         </div>
@@ -251,7 +296,7 @@
           <div class="font-mono text-xs uppercase text-slate-400 tracking-wider">Overview & Telemetry</div>
           <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Escrow Portfolio</h1>
         </div>
-        <div class="flex items-center space-x-3">
+        <div class="flex flex-wrap items-center gap-2">
           <button onclick="TrustBridgeApp.refreshDashboard()" class="btn-secondary text-xs">
             <span>Refresh</span>
           </button>
@@ -766,6 +811,73 @@
     </section>
 
   </main>
+
+  <!-- MODAL: AUTHENTICATION (SIGN IN / REGISTER) -->
+  <div id="modal-auth" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white hairline-all max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl rounded-sm">
+      <div class="flex items-center justify-between hairline-b pb-4">
+        <div class="flex items-center space-x-4">
+          <button id="auth-tab-login" onclick="TrustBridgeApp.switchAuthTab('login')" class="text-sm font-semibold text-slate-900 pb-1 border-b-2 border-slate-900">
+            Sign In
+          </button>
+          <button id="auth-tab-register" onclick="TrustBridgeApp.switchAuthTab('register')" class="text-sm font-medium text-slate-400 hover:text-slate-800 pb-1 border-b-2 border-transparent">
+            Create Account
+          </button>
+        </div>
+        <button onclick="TrustBridgeApp.closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+      </div>
+
+      <!-- ERROR ALERT -->
+      <div id="auth-error-alert" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded"></div>
+
+      <!-- FORM: LOGIN -->
+      <form id="form-login" onsubmit="event.preventDefault(); TrustBridgeApp.executeLogin();" class="space-y-4">
+        <div>
+          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Email Address</label>
+          <input id="login-email" type="email" required placeholder="you@example.com" class="form-input text-sm">
+        </div>
+        <div>
+          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Password</label>
+          <input id="login-password" type="password" required placeholder="••••••••" class="form-input text-sm">
+        </div>
+        <div class="pt-2">
+          <button type="submit" id="btn-login-submit" class="btn-primary w-full text-xs py-2.5">
+            <span>Sign In to TrustBridge</span>
+            <span>→</span>
+          </button>
+        </div>
+      </form>
+
+      <!-- FORM: REGISTER -->
+      <form id="form-register" onsubmit="event.preventDefault(); TrustBridgeApp.executeRegister();" class="hidden space-y-4">
+        <div>
+          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Display Name</label>
+          <input id="reg-name" type="text" required placeholder="Alex Vance" class="form-input text-sm">
+        </div>
+        <div>
+          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Account Role</label>
+          <select id="reg-role" class="form-select text-sm">
+            <option value="client">Client (Hire & Fund Escrow)</option>
+            <option value="freelancer">Freelancer (Deliver & Receive Payouts)</option>
+          </select>
+        </div>
+        <div>
+          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Email Address</label>
+          <input id="reg-email" type="email" required placeholder="you@domain.com" class="form-input text-sm">
+        </div>
+        <div>
+          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Password (Min 6 Characters)</label>
+          <input id="reg-password" type="password" minlength="6" required placeholder="••••••••" class="form-input text-sm">
+        </div>
+        <div class="pt-2">
+          <button type="submit" id="btn-reg-submit" class="btn-primary w-full text-xs py-2.5">
+            <span>Create Free Account</span>
+            <span>→</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL: EVIDENCE SUBMISSION -->
   <div id="modal-submit-evidence" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">

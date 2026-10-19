@@ -12,15 +12,47 @@ const TrustBridgeApp = {
     fxRates: { USD: 1.0, INR: 84.50, EUR: 0.92, GBP: 0.78 },
     lastNegotiation: null,
     generatedDraft: null,
+    user: null,
+    token: localStorage.getItem('tb_access_token') || null,
+    refreshToken: localStorage.getItem('tb_refresh_token') || null,
+    notifications: [],
+    unreadCount: 0,
   },
 
   // ---------------------------------------------------------------------------
   // INITIALIZATION & ROUTING
   // ---------------------------------------------------------------------------
   init() {
+    // Check if auth_token passed in URL for automated testing / previews
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlToken = urlParams.get('auth_token');
+      if (urlToken) {
+        this.state.token = urlToken;
+        localStorage.setItem('tb_access_token', urlToken);
+      }
+    } catch (e) {}
+
     window.addEventListener('hashchange', () => this.handleRouting());
+    this.initAuth();
     this.handleRouting();
     this.fetchLiveFXRates();
+
+    // Close notification dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+      const dropdown = document.getElementById('notif-dropdown');
+      const bell = document.getElementById('notif-bell-btn');
+      if (dropdown && bell && !dropdown.contains(e.target) && !bell.contains(e.target)) {
+        dropdown.classList.add('hidden');
+      }
+    });
+
+    // Notification polling every 30s
+    setInterval(() => {
+      if (this.state.token) {
+        this.fetchNotifications();
+      }
+    }, 30000);
   },
 
   handleRouting() {
@@ -71,20 +103,303 @@ const TrustBridgeApp = {
   },
 
   // ---------------------------------------------------------------------------
+  // AUTHENTICATION & USER SESSIONS
+  // ---------------------------------------------------------------------------
+  setSession(accessToken, refreshToken, user = null) {
+    this.state.token = accessToken;
+    this.state.refreshToken = refreshToken;
+    localStorage.setItem('tb_access_token', accessToken);
+    localStorage.setItem('tb_refresh_token', refreshToken);
+    if (user) {
+      this.state.user = user;
+    }
+    this.updateNavAuthUI();
+  },
+
+  async initAuth() {
+    if (this.state.token) {
+      try {
+        const user = await this.apiRequest('/auth/me');
+        this.state.user = user;
+        this.fetchNotifications();
+      } catch (e) {
+        console.warn('Session expired or invalid:', e.message);
+        this.logout();
+      }
+    }
+    this.updateNavAuthUI();
+  },
+
+  updateNavAuthUI() {
+    const container = document.getElementById('auth-nav-container');
+    if (!container) return;
+
+    if (this.state.user) {
+      const u = this.state.user;
+      const initial = (u.display_name || u.email || 'U')[0].toUpperCase();
+      const roleBadge = u.role === 'freelancer' ? 'Freelancer' : 'Client';
+      container.innerHTML = `
+        <div class="flex items-center space-x-2">
+          <div class="w-7 h-7 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-xs">
+            ${initial}
+          </div>
+          <div class="hidden sm:flex flex-col text-left text-xs leading-tight">
+            <span class="font-medium text-slate-900">${this.escapeHtml(u.display_name)}</span>
+            <span class="text-[10px] text-slate-500 font-mono">${roleBadge}</span>
+          </div>
+          <button onclick="TrustBridgeApp.logout()" class="btn-subtle text-xs py-1 px-2 text-slate-500 hover:text-red-600">
+            Log Out
+          </button>
+        </div>
+      `;
+    } else {
+      container.innerHTML = `
+        <button onclick="TrustBridgeApp.openAuthModal('login')" class="btn-secondary text-xs py-1.5 px-3">
+          Sign In
+        </button>
+        <button onclick="TrustBridgeApp.openAuthModal('register')" class="btn-primary text-xs py-1.5 px-3 hidden sm:inline-flex">
+          Register
+        </button>
+      `;
+    }
+  },
+
+  openAuthModal(tab = 'login') {
+    const modal = document.getElementById('modal-auth');
+    if (modal) modal.classList.remove('hidden');
+    this.switchAuthTab(tab);
+    const err = document.getElementById('auth-error-alert');
+    if (err) err.classList.add('hidden');
+  },
+
+  closeAuthModal() {
+    const modal = document.getElementById('modal-auth');
+    if (modal) modal.classList.add('hidden');
+  },
+
+  switchAuthTab(tab) {
+    const tabLogin = document.getElementById('auth-tab-login');
+    const tabRegister = document.getElementById('auth-tab-register');
+    const formLogin = document.getElementById('form-login');
+    const formRegister = document.getElementById('form-register');
+    const err = document.getElementById('auth-error-alert');
+    if (err) err.classList.add('hidden');
+
+    if (tab === 'login') {
+      tabLogin?.classList.add('text-slate-900', 'font-semibold', 'border-slate-900');
+      tabLogin?.classList.remove('text-slate-400', 'border-transparent');
+      tabRegister?.classList.remove('text-slate-900', 'font-semibold', 'border-slate-900');
+      tabRegister?.classList.add('text-slate-400', 'border-transparent');
+      formLogin?.classList.remove('hidden');
+      formRegister?.classList.add('hidden');
+    } else {
+      tabRegister?.classList.add('text-slate-900', 'font-semibold', 'border-slate-900');
+      tabRegister?.classList.remove('text-slate-400', 'border-transparent');
+      tabLogin?.classList.remove('text-slate-900', 'font-semibold', 'border-slate-900');
+      tabLogin?.classList.add('text-slate-400', 'border-transparent');
+      formRegister?.classList.remove('hidden');
+      formLogin?.classList.add('hidden');
+    }
+  },
+
+  async executeLogin() {
+    const email = document.getElementById('login-email')?.value;
+    const password = document.getElementById('login-password')?.value;
+    const errEl = document.getElementById('auth-error-alert');
+    try {
+      const res = await this.apiRequest('/auth/login', 'POST', { email, password });
+      this.setSession(res.access_token, res.refresh_token, res.user);
+      this.closeAuthModal();
+      this.showToast(`Welcome back, ${res.user.display_name}!`, 'success');
+      this.fetchNotifications();
+      this.refreshDashboard();
+    } catch (e) {
+      if (errEl) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+  },
+
+  async executeRegister() {
+    const email = document.getElementById('reg-email')?.value;
+    const password = document.getElementById('reg-password')?.value;
+    const displayName = document.getElementById('reg-name')?.value;
+    const role = document.getElementById('reg-role')?.value || 'client';
+    const errEl = document.getElementById('auth-error-alert');
+    try {
+      const res = await this.apiRequest('/auth/register', 'POST', {
+        email,
+        password,
+        display_name: displayName,
+        role,
+      });
+      this.setSession(res.access_token, res.refresh_token, res.user);
+      this.closeAuthModal();
+      this.showToast(`Account created! Welcome, ${res.user.display_name}!`, 'success');
+      this.fetchNotifications();
+      this.refreshDashboard();
+    } catch (e) {
+      if (errEl) {
+        errEl.textContent = e.message;
+        errEl.classList.remove('hidden');
+      }
+    }
+  },
+
+  logout() {
+    this.state.user = null;
+    this.state.token = null;
+    this.state.refreshToken = null;
+    this.state.notifications = [];
+    this.state.unreadCount = 0;
+    localStorage.removeItem('tb_access_token');
+    localStorage.removeItem('tb_refresh_token');
+    this.updateNavAuthUI();
+    this.renderNotifications();
+    this.showToast('You have been logged out', 'info');
+    this.refreshDashboard();
+  },
+
+  toggleMobileMenu() {
+    const drawer = document.getElementById('mobile-nav-drawer');
+    if (drawer) {
+      drawer.classList.toggle('hidden');
+    }
+  },
+
+  // ---------------------------------------------------------------------------
+  // IN-APP NOTIFICATIONS
+  // ---------------------------------------------------------------------------
+  toggleNotificationsDropdown() {
+    const dropdown = document.getElementById('notif-dropdown');
+    if (!dropdown) return;
+    const isHidden = dropdown.classList.contains('hidden');
+    if (isHidden) {
+      dropdown.classList.remove('hidden');
+      this.fetchNotifications();
+    } else {
+      dropdown.classList.add('hidden');
+    }
+  },
+
+  async fetchNotifications() {
+    if (!this.state.token) {
+      this.state.notifications = [];
+      this.state.unreadCount = 0;
+      this.renderNotifications();
+      return;
+    }
+    try {
+      const data = await this.apiRequest('/notifications');
+      this.state.notifications = data.notifications || [];
+      this.state.unreadCount = data.unread_count || 0;
+      this.renderNotifications();
+    } catch (e) {
+      // Quiet fail if guest or token expired
+    }
+  },
+
+  renderNotifications() {
+    const badge = document.getElementById('notif-badge');
+    const list = document.getElementById('notif-list');
+    if (badge) {
+      if (this.state.unreadCount > 0) {
+        badge.textContent = this.state.unreadCount > 9 ? '9+' : this.state.unreadCount;
+        badge.classList.remove('hidden');
+      } else {
+        badge.classList.add('hidden');
+      }
+    }
+
+    if (!list) return;
+    if (!this.state.notifications.length) {
+      list.innerHTML = `<div class="p-6 text-center text-xs text-slate-400 font-mono">No notifications yet</div>`;
+      return;
+    }
+
+    list.innerHTML = this.state.notifications.map(n => {
+      const isUnread = !n.read;
+      const timeStr = new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return `
+        <div class="p-3 text-left transition hover:bg-slate-50 flex items-start justify-between gap-3 ${isUnread ? 'bg-blue-50/40' : ''}">
+          <div class="space-y-1">
+            <div class="flex items-center space-x-2">
+              <span class="font-semibold text-xs text-slate-900">${this.escapeHtml(n.title)}</span>
+              ${isUnread ? '<span class="w-1.5 h-1.5 rounded-full bg-blue-600 inline-block"></span>' : ''}
+            </div>
+            <p class="text-xs text-slate-600 leading-snug">${this.escapeHtml(n.body)}</p>
+            <span class="font-mono text-[10px] text-slate-400">${timeStr}</span>
+          </div>
+          ${isUnread ? `
+            <button onclick="TrustBridgeApp.markNotificationRead('${n.id}')" title="Mark as read" class="text-[11px] text-slate-400 hover:text-slate-700 font-mono">
+              ✓
+            </button>
+          ` : ''}
+        </div>
+      `;
+    }).join('');
+  },
+
+  async markNotificationRead(id) {
+    try {
+      await this.apiRequest(`/notifications/${id}/read`, 'POST');
+      this.fetchNotifications();
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  async markAllNotificationsRead() {
+    try {
+      await this.apiRequest('/notifications/read-all', 'POST');
+      this.fetchNotifications();
+    } catch (e) {
+      console.error(e);
+    }
+  },
+
+  // ---------------------------------------------------------------------------
   // API HELPERS & TOASTS
   // ---------------------------------------------------------------------------
   async apiRequest(path, method = 'GET', body = null) {
+    const headers = {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+    if (this.state.token) {
+      headers['Authorization'] = `Bearer ${this.state.token}`;
+    }
     const options = {
       method,
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
+      headers,
     };
     if (body) {
       options.body = JSON.stringify(body);
     }
-    const res = await fetch(`${API_BASE}${path}`, options);
+    let res = await fetch(`${API_BASE}${path}`, options);
+
+    // If 401 and we have a refresh token, try refreshing token
+    if (res.status === 401 && this.state.refreshToken && !path.startsWith('/auth/')) {
+      try {
+        const refRes = await fetch(`${API_BASE}/auth/refresh`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: this.state.refreshToken }),
+        });
+        if (refRes.ok) {
+          const newTokens = await refRes.json();
+          this.setSession(newTokens.access_token, newTokens.refresh_token, newTokens.user);
+          headers['Authorization'] = `Bearer ${newTokens.access_token}`;
+          res = await fetch(`${API_BASE}${path}`, options);
+        } else {
+          this.logout();
+        }
+      } catch (e) {
+        this.logout();
+      }
+    }
+
     if (!res.ok) {
       const err = await res.json().catch(() => ({ detail: res.statusText }));
       throw new Error(err.detail || 'API request failed');
@@ -140,12 +455,18 @@ const TrustBridgeApp = {
   // DASHBOARD
   // ---------------------------------------------------------------------------
   async refreshDashboard() {
+    if (!this.state.token) {
+      this.state.contracts = [];
+      this.renderDashboard();
+      return;
+    }
     try {
       const contracts = await this.apiRequest('/contracts');
       this.state.contracts = contracts || [];
       this.renderDashboard();
     } catch (e) {
-      this.showToast(`Failed to load contracts: ${e.message}`, 'error');
+      this.state.contracts = [];
+      this.renderDashboard();
     }
   },
 
@@ -174,6 +495,21 @@ const TrustBridgeApp = {
 
     const tbody = document.getElementById('contracts-table-body');
     if (!tbody) return;
+
+    if (!this.state.token) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="7" class="text-center py-16 text-slate-500 font-mono text-xs">
+            Sign in to view your personalized portfolio contracts and escrow status.
+            <div class="pt-4 flex items-center justify-center space-x-3">
+              <button onclick="TrustBridgeApp.openAuthModal('login')" class="btn-primary text-xs py-1.5 px-4">Sign In</button>
+              <button onclick="TrustBridgeApp.openAuthModal('register')" class="btn-secondary text-xs py-1.5 px-4">Create Account</button>
+            </div>
+          </td>
+        </tr>
+      `;
+      return;
+    }
 
     if (contracts.length === 0) {
       tbody.innerHTML = `
@@ -717,6 +1053,7 @@ const TrustBridgeApp = {
       });
       this.closeSubmitModal();
       this.showToast('Deliverable submitted and automatically verified!', 'success');
+      this.fetchNotifications();
       if (this.state.activeContract) {
         this.loadContractDetail(this.state.activeContract.id);
       }
@@ -732,6 +1069,7 @@ const TrustBridgeApp = {
         notes: 'Objective criteria verified via test runner',
       });
       this.showToast('Milestone verified! Ready for release.', 'success');
+      this.fetchNotifications();
       if (this.state.activeContract) {
         this.loadContractDetail(this.state.activeContract.id);
       }
@@ -746,6 +1084,7 @@ const TrustBridgeApp = {
         release_note: 'Approved by client. Programmatic payout executed.',
       });
       this.showToast('Funds released! Developer payout transmitted.', 'success');
+      this.fetchNotifications();
       if (this.state.activeContract) {
         this.loadContractDetail(this.state.activeContract.id);
       }
@@ -764,6 +1103,7 @@ const TrustBridgeApp = {
         evidence_notes: 'Evidence submitted for administrative dispute review',
       });
       this.showToast('Dispute initiated. Milestone frozen in DISPUTED state.', 'error');
+      this.fetchNotifications();
       if (this.state.activeContract) {
         this.loadContractDetail(this.state.activeContract.id);
       }

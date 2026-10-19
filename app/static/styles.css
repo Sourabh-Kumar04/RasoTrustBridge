@@ -250,3 +250,34 @@ h3, .h3 {
 ::-webkit-scrollbar-thumb:hover {
   background: #D1D5DB;
 }
+
+/* --------------------------------------------------------------------------
+   Mobile Responsive Optimizations (375px Audit)
+   -------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  h1, .h1 {
+    font-size: 1.625rem;
+    line-height: 2.125rem;
+    letter-spacing: -0.025em;
+  }
+  h2, .h2 {
+    font-size: 1.25rem;
+    line-height: 1.625rem;
+  }
+  .view-panel {
+    padding-top: 1rem;
+    padding-bottom: 1.5rem;
+  }
+  #notif-dropdown {
+    width: min(22rem, calc(100vw - 1.5rem)) !important;
+    right: -1rem !important;
+  }
+  .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+  .transcript-msg {
+    max-width: 90% !important;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+}

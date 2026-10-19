@@ -1,0 +1,60 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trustbridge_web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - ENVIRONMENT=production
+      - DEBUG=False
+      - HOST=0.0.0.0
+      - PORT=8000
+      - DATABASE_URL=postgresql://trustbridge:trustbridge_secret@db:5432/trustbridge
+      - SECRET_KEY=${SECRET_KEY:-tb_prod_secret_key_32_bytes_super_secure}
+      - JWT_SECRET=${JWT_SECRET:-tb_prod_jwt_secret_key_32_bytes_super_secure}
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      - REFRESH_TOKEN_EXPIRE_DAYS=30
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_MODE=${PAYPAL_MODE:-sandbox}
+      - PAYPAL_API_BASE=${PAYPAL_API_BASE:-https://api-m.sandbox.paypal.com}
+      - GITHUB_WEBHOOK_SECRET=${GITHUB_WEBHOOK_SECRET:-trustbridge_github_webhook_secret_dev}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      - FX_RATES_API_URL=https://open.er-api.com/v6/latest/USD
+      - FX_CACHE_TTL_SECONDS=3600
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  db:
+    image: postgres:16-alpine
+    container_name: trustbridge_db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=trustbridge
+      - POSTGRES_PASSWORD=trustbridge_secret
+      - POSTGRES_DB=trustbridge
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U trustbridge -d trustbridge"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres_data:
+    name: trustbridge_postgres_data

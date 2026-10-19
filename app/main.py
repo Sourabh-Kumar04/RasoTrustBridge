@@ -79,9 +79,23 @@ def serve_app(full_path: str = ""):
 
 @app.get("/health", tags=["Health"])
 def health_check():
+    db_healthy = True
+    try:
+        from app.database import SessionLocal
+        from sqlalchemy import text
+        db = SessionLocal()
+        try:
+            db.execute(text("SELECT 1"))
+        finally:
+            db.close()
+    except Exception:
+        db_healthy = False
+
     return {
-        "status": "healthy",
+        "status": "healthy" if db_healthy else "degraded",
+        "database_connected": db_healthy,
         "engine": "FastAPI",
         "database": "sqlite_wal" if "sqlite" in settings.DATABASE_URL else "postgresql",
         "paypal_configured": bool(settings.PAYPAL_CLIENT_ID and len(settings.PAYPAL_CLIENT_ID) > 5),
+        "version": settings.VERSION,
     }
