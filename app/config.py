@@ -19,6 +19,12 @@ class Settings(BaseSettings):
     PORT: int = 8000
     SECRET_KEY: str = "trustbridge-dev-secret-key-32-chars-long"
 
+    # Authentication & JWT
+    JWT_SECRET: str = "trustbridge-dev-jwt-secret-key-32-chars-minimum"
+    JWT_ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+
     # Database
     DATABASE_URL: str = "sqlite:///./trustbridge.db"
 

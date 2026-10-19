@@ -23,6 +23,7 @@ from app.schemas.negotiation import (
 )
 from app.services.contract_service import contract_service
 from app.services.fx_service import fx_service
+from app.services.notification_service import notification_service
 
 
 class NegotiatorService:
@@ -68,6 +69,7 @@ class NegotiatorService:
             try:
                 created_contract = await contract_service.create_contract(db, contract_create_req)
                 contract_id = created_contract.id
+                notification_service.notify_negotiation_completed(db, created_contract)
             except Exception as e:
                 # Log or keep agreement record even if creation had issue
                 pass

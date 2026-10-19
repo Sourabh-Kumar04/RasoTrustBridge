@@ -12,6 +12,8 @@ from app.services.fx_service import fx_service
 from app.services.paypal_client import paypal_client
 from app.services.milestone_verifier import milestone_verifier
 from app.services.dispute_service import dispute_service
+from app.services.notification_service import notification_service
+from app.models.user import User
 
 
 class ContractService:
@@ -34,10 +36,25 @@ class ContractService:
                 detail=f"Milestone amounts sum ({milestone_sum:.2f}) does not match contract total ({req.total_amount:.2f})",
             )
 
-        # 3. Create contract
+        # 3. Resolve user account IDs (client_id, freelancer_id)
+        client_id = req.client_id
+        if not client_id:
+            u_client = db.query(User).filter(User.email == req.client_email.lower()).first()
+            if u_client:
+                client_id = u_client.id
+
+        freelancer_id = req.freelancer_id
+        if not freelancer_id:
+            u_dev = db.query(User).filter(User.email == req.developer_email.lower()).first()
+            if u_dev:
+                freelancer_id = u_dev.id
+
+        # 4. Create contract
         contract = Contract(
             title=req.title,
             brief=req.brief,
+            client_id=client_id,
+            freelancer_id=freelancer_id,
             client_name=req.client_name,
             client_email=req.client_email,
             client_country=req.client_country,
@@ -54,7 +71,7 @@ class ContractService:
         db.add(contract)
         db.flush()
 
-        # 4. Create milestones
+        # 5. Create milestones
         for idx, m_in in enumerate(req.milestones, start=1):
             payout_amt = round(m_in.amount * locked_rate, 2)
             milestone = Milestone(
@@ -189,6 +206,12 @@ class ContractService:
         db.add(audit)
         db.commit()
         db.refresh(milestone)
+
+        # Event triggers: notify client of deliverable submission
+        notification_service.notify_milestone_submitted(db, milestone.contract, milestone)
+        if is_approved:
+            notification_service.notify_milestone_verified(db, milestone.contract, milestone)
+
         return milestone
 
     async def verify_milestone(
@@ -237,6 +260,10 @@ class ContractService:
         db.add(audit)
         db.commit()
         db.refresh(milestone)
+
+        if is_approved:
+            notification_service.notify_milestone_verified(db, milestone.contract, milestone)
+
         return milestone
 
     async def release_milestone(
@@ -308,6 +335,10 @@ class ContractService:
         db.add(audit)
         db.commit()
         db.refresh(milestone)
+
+        # Event trigger: notify developer of released payout
+        notification_service.notify_funds_released(db, contract, milestone)
+
         return milestone
 
     async def dispute_milestone(
@@ -321,7 +352,7 @@ class ContractService:
             raise HTTPException(status_code=404, detail="Milestone not found")
 
         contract = milestone.contract
-        return dispute_service.open_dispute(
+        dispute = dispute_service.open_dispute(
             db=db,
             contract=contract,
             milestone=milestone,
@@ -330,6 +361,9 @@ class ContractService:
             reason=req.reason,
             description=req.description,
         )
+        # Event trigger: notify parties of dispute
+        notification_service.notify_dispute_opened(db, contract, milestone, dispute)
+        return dispute
 
 
 contract_service = ContractService()

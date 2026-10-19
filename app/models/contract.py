@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import Column, String, Float, Text, DateTime, Enum as SQLEnum
+from sqlalchemy import Column, String, Float, Text, DateTime, ForeignKey, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from app.database import Base
 from app.models.enums import ContractStatus, FXStrategy
@@ -17,6 +17,10 @@ class Contract(Base):
     title = Column(String(255), nullable=False)
     brief = Column(Text, nullable=False)
     
+    # Linked User Accounts
+    client_id = Column(String(32), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    freelancer_id = Column(String(32), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
     # Parties
     client_name = Column(String(128), nullable=False)
     client_email = Column(String(255), nullable=False)
@@ -66,6 +70,16 @@ class Contract(Base):
     completed_at = Column(DateTime(timezone=True), nullable=True)
 
     # Relationships
+    client_user = relationship(
+        "User",
+        foreign_keys=[client_id],
+        back_populates="client_contracts",
+    )
+    freelancer_user = relationship(
+        "User",
+        foreign_keys=[freelancer_id],
+        back_populates="freelancer_contracts",
+    )
     milestones = relationship(
         "Milestone",
         back_populates="contract",

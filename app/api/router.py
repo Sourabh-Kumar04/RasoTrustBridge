@@ -1,4 +1,6 @@
 from fastapi import APIRouter
+from app.api.auth import router as auth_router
+from app.api.notifications import router as notifications_router
 from app.api.contracts import router as contracts_router
 from app.api.milestones import router as milestones_router
 from app.api.ai import router as ai_router
@@ -9,6 +11,8 @@ from app.api.webhooks import router as webhooks_router
 
 api_router = APIRouter(prefix="/api/v1")
 
+api_router.include_router(auth_router)
+api_router.include_router(notifications_router)
 api_router.include_router(contracts_router)
 api_router.include_router(milestones_router)
 api_router.include_router(ai_router)

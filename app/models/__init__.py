@@ -9,6 +9,8 @@ from app.models.enums import (
 from app.models.contract import Contract
 from app.models.milestone import Milestone
 from app.models.payment import AuditLog, DisputeRecord, EscrowHold
+from app.models.user import User
+from app.models.notification import Notification
 
 __all__ = [
     "ContractStatus",
@@ -22,4 +24,6 @@ __all__ = [
     "AuditLog",
     "DisputeRecord",
     "EscrowHold",
+    "User",
+    "Notification",
 ]

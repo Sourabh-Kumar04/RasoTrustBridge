@@ -60,9 +60,11 @@ class ContractCreateSchema(BaseModel):
     client_name: str = Field(..., max_length=128)
     client_email: EmailStr
     client_country: str = Field(default="US", max_length=8)
+    client_id: Optional[str] = None
     developer_name: str = Field(..., max_length=128)
     developer_email: EmailStr
     developer_country: str = Field(default="IN", max_length=8)
+    freelancer_id: Optional[str] = None
     base_currency: str = Field(default="USD", max_length=8)
     payout_currency: str = Field(default="INR", max_length=8)
     total_amount: float = Field(..., gt=0)
@@ -88,6 +90,8 @@ class ContractResponseSchema(BaseModel):
     id: str
     title: str
     brief: str
+    client_id: Optional[str] = None
+    freelancer_id: Optional[str] = None
     client_name: str
     client_email: str
     client_country: str
