@@ -5,9 +5,9 @@
 [![Python 3.12+](https://img.shields.io/badge/Python-3.12%2B-black.svg)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115%2B-black.svg)](https://fastapi.tiangolo.com/)
 [![PayPal Sandbox](https://img.shields.io/badge/PayPal-Orders%20%26%20Payouts%20Sandbox-003087.svg)](https://developer.paypal.com/)
-[![Tests](https://img.shields.io/badge/Tests-23%20Passed%20%7C%20Green-brightgreen.svg)]()
+[![Tests](https://img.shields.io/badge/Tests-30%20Passed%20%7C%20Green-brightgreen.svg)]()
 [![Ollama](https://img.shields.io/badge/Ollama-llama3.2%3A3b%20Local-blue.svg)](https://ollama.com/)
-[![Phase 2](https://img.shields.io/badge/Phase%202-Complete-black.svg)]()
+[![Phase 3](https://img.shields.io/badge/Phase%203-Complete%20%28Webhooks%20%2B%20E2E%29-black.svg)]()
 
 ---
 
@@ -222,6 +222,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 | `POST` | `/api/v1/paypal/order/create` | Initiates PayPal escrow order hold |
 | `POST` | `/api/v1/paypal/order/capture` | Captures authorized PayPal order |
 | `POST` | `/api/v1/paypal/webhook` | Handles incoming PayPal event notifications |
+| `POST` | `/api/v1/webhooks/github` | GitHub webhook receiver: HMAC-SHA256 signature verification, PR merge milestone verification, and push commit tracking |
 
 ---
 
@@ -243,17 +244,13 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ## 11. Honest Limitations & Product Roadmap
 
-### Delivered Scope (Phase 1 & Phase 2 — Core Engine, Negotiator & Premium Frontend)
+### Delivered Scope (Phases 1, 2, and 3 — Complete)
 - **Phase 1 (Complete)**: Full Python/FastAPI backend, SQLAlchemy ORM, 20 initial tests, local Ollama + rule template contract builder, FX risk simulator, PayPal Orders/Payouts sandbox gateway, milestone state machine, and dispute packaging engine.
 - **Phase 2A (Complete)**: Stripe/Linear-grade minimal frontend, strict hairline dividers, pure white background, generous whitespace, zero card clutter, tabular typography, and interactive routing.
-- **Phase 2B (Complete)**: Autonomous Agent-to-Agent Negotiator with local Ollama (`llama3.2:3b`) multi-round deliberation, chain-of-thought strategy extraction, price convergence, and programmatic escrow contract creation. 23/23 tests green.
+- **Phase 2B (Complete)**: Autonomous Agent-to-Agent Negotiator with local Ollama (`llama3.2:3b`) multi-round deliberation, chain-of-thought strategy extraction, price convergence, and programmatic escrow contract creation.
+- **Phase 3 (Complete)**: GitHub Webhook Verification Engine with cryptographic HMAC-SHA256 validation (`POST /api/v1/webhooks/github`). Automatically parses PR branch/title/commits, submits deliverables, triggers AI evaluation, and transitions milestones to `VERIFIED`. Push commit SHA tracking for delivery proof. PayPal Sandbox Readiness Guide (`docs/PAYPAL_SANDBOX_GUIDE.md`), interactive verification script (`scripts/test_paypal_sandbox.py`), live curl simulation (`scripts/simulate_webhook_curl.sh`), and full lifecycle End-to-End integration test (`tests/test_e2e_lifecycle.py`). 30/30 tests green.
 
-### Phase 3: Automated GitHub & CI/CD Verification (Upcoming)
-- GitHub Webhook listeners for automated PR merge, test suite pass verification, and commit SHA verification.
-- Automated code diff analysis against contract acceptance criteria.
-- Real PayPal developer sandbox credentials integration for end-to-end live testing.
-
-### Phase 4: Production Compliance & Reputation Staking
+### Phase 4: Production Compliance & Reputation Staking (Upcoming)
 - PayPal Commerce Platform production onboarding and multi-party escrow agreements.
 - Cross-border tax compliance (W-8BEN handling) and freelancer reputation staking protocols.
 
