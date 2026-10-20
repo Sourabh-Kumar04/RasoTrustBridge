@@ -16,9 +16,11 @@ from app.services.auth_service import (
     create_refresh_token,
     decode_token,
 )
+from app.config import get_settings
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+settings = get_settings()
 
 
 @router.post("/register", response_model=TokenResponseSchema, status_code=status.HTTP_201_CREATED)
@@ -42,6 +44,7 @@ def register(
         hashed_password=hash_password(req.password),
         role=req.role,
         display_name=req.display_name,
+        trust_score=settings.DEFAULT_NEW_ACCOUNT_TRUST_SCORE,
     )
     db.add(user)
     db.commit()

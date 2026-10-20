@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 authors = [
     { name = "Sourabh Kumar", email = "sourabh@trustbridge.network" }
 ]
-license = { text = "MIT" }
+license = { text = "PolyForm Noncommercial License 1.0.0" }
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -34,6 +34,9 @@ dev = [
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
