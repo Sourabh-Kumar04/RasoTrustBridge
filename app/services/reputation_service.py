@@ -51,6 +51,45 @@ class ReputationService:
             return min(user.trust_score if user.trust_score is not None else settings.DEFAULT_NEW_ACCOUNT_TRUST_SCORE, settings.DEFAULT_NEW_ACCOUNT_TRUST_SCORE)
         return user.trust_score if user.trust_score is not None else 50.0
 
+    def calculate_graduated_stake_percentage(self, freelancer: Optional[User]) -> float:
+        """
+        Harmer's Graduated Stake Model:
+        - New accounts (< 7 days OR 0 completed deals): 10% of contract value
+        - Emerging (1-4 completed deals, no lost disputes): 7%
+        - Established (5-19 completed deals, dispute-loss rate < 10%): 4%
+        - Proven (20+ completed deals, dispute-loss rate < 5%): 2%
+        - Stake rate is computed from the freelancer's reputation at contract acceptance time.
+        """
+        if not freelancer:
+            return 10.0
+
+        is_new_age = self.is_new_account(freelancer)
+        completed = freelancer.completed_deals or 0
+        losses = getattr(freelancer, "disputes_lost", 0) or 0
+
+        # Rule 1: New accounts (< 7 days OR 0 completed deals): 10%
+        if is_new_age or completed == 0:
+            return 10.0
+
+        # Dispute-loss rate over total deals
+        total_deals = completed + losses
+        loss_rate = (losses / total_deals) if total_deals > 0 else 0.0
+
+        # Rule 4: Proven (20+ completed deals, dispute-loss rate < 5%): 2%
+        if completed >= 20 and loss_rate < 0.05:
+            return 2.0
+
+        # Rule 3: Established (5-19 completed deals, dispute-loss rate < 10%): 4%
+        if 5 <= completed <= 19 and loss_rate < 0.10:
+            return 4.0
+
+        # Rule 2: Emerging (1-4 completed deals, no lost disputes): 7%
+        if 1 <= completed <= 4 and losses == 0:
+            return 7.0
+
+        # Fallback for accounts with poor dispute record
+        return 10.0
+
     def validate_freelancer_for_contract(
         self,
         freelancer: Optional[User],
@@ -58,30 +97,19 @@ class ReputationService:
         offered_stake_percentage: Optional[float] = None,
     ) -> Tuple[bool, float, Optional[str]]:
         """
-        Validates freelancer eligibility and calculates required stake percentage.
-        Harmer's critique: Contracts above $1,000 require >= 1 prior deal OR higher stake (10%).
+        Validates freelancer eligibility and calculates required stake percentage
+        using Harmer's graduated reputation model.
         Returns: (is_eligible, required_stake_percentage, error_message_if_any)
         """
-        settings = get_settings()
-        default_stake = settings.DEFAULT_STAKE_PERCENTAGE
-        high_stake = settings.NEW_ACCOUNT_STAKE_PERCENTAGE
-        threshold = settings.NEW_ACCOUNT_THRESHOLD_AMOUNT
+        required_stake = self.calculate_graduated_stake_percentage(freelancer)
 
-        is_new = self.is_new_account(freelancer)
-        completed = freelancer.completed_deals if freelancer else 0
+        if offered_stake_percentage is not None and offered_stake_percentage < required_stake:
+            return False, required_stake, (
+                f"Freelancer reputation tier requires a minimum {required_stake:.1f}% security deposit stake; "
+                f"must post a {required_stake:.1f}% security deposit stake (provided: {offered_stake_percentage:.1f}%)."
+            )
 
-        if contract_amount >= threshold:
-            if is_new and completed < 1:
-                required_stake = high_stake
-                if offered_stake_percentage is not None and offered_stake_percentage < high_stake:
-                    return False, required_stake, (
-                        f"New accounts (< {settings.NEW_ACCOUNT_AGE_DAYS} days old) with 0 prior completed deals "
-                        f"must post a {high_stake:.1f}% security deposit stake for contracts >= ${threshold:,.2f} "
-                        f"(provided: {offered_stake_percentage:.1f}%)."
-                    )
-                return True, required_stake, None
-
-        return True, default_stake, None
+        return True, required_stake, None
 
     def record_successful_release(self, db: Session, user: Optional[User]) -> Optional[float]:
         """Awards reputation points upon successful milestone release or contract completion."""
@@ -118,6 +146,7 @@ class ReputationService:
                 db.add(freelancer)
             if client:
                 client.trust_score = self.clamp_score((client.trust_score or 50.0) + self.POINTS_DISPUTE_AGAINST)
+                client.disputes_lost = (getattr(client, "disputes_lost", 0) or 0) + 1
                 db.add(client)
 
         elif resolution_status == DisputeStatus.RESOLVED_CLIENT_REFUND:
@@ -127,6 +156,7 @@ class ReputationService:
                 db.add(client)
             if freelancer:
                 freelancer.trust_score = self.clamp_score((freelancer.trust_score or 50.0) + self.POINTS_DISPUTE_AGAINST)
+                freelancer.disputes_lost = (getattr(freelancer, "disputes_lost", 0) or 0) + 1
                 db.add(freelancer)
 
 

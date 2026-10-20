@@ -426,9 +426,10 @@ class ContractService:
         if all_released:
             contract.status = ContractStatus.COMPLETED
             contract.completed_at = now
-            # Reputation with Economic Skin: Return freelancer stake in full upon completion
+            # Harmer's Graduated Model: Return freelancer stake and client deposit in full upon completion
             from app.services.stake_service import stake_service
             stake_service.return_stake(db, contract.id)
+            stake_service.return_client_deposit(db, contract.id)
 
         # 6. Reputation Engine: Award trust points on successful release
         reputation_service.record_successful_release(db, contract.freelancer_user)

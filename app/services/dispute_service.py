@@ -98,9 +98,11 @@ class DisputeService:
         resolution_status: DisputeStatus,
         resolution_notes: str,
         resolved_by: str = "ARBITRATION_SYSTEM",
+        decided_by: str = "arbiter",
     ) -> DisputeRecord:
         dispute.status = resolution_status
         dispute.resolution_notes = resolution_notes
+        dispute.decided_by = decided_by
         dispute.resolved_at = datetime.now(timezone.utc)
 
         contract = dispute.contract
@@ -111,13 +113,34 @@ class DisputeService:
         from app.services.reputation_service import reputation_service
         from app.services.stake_service import stake_service
 
-        if resolution_status == DisputeStatus.RESOLVED_DEVELOPER_PAYOUT:
+        if decided_by == "client_accept":
+            # Client voluntarily accepts freelancer work - not a dispute loss for either party
             milestone.status = MilestoneStatus.RELEASED
             milestone.released_at = datetime.now(timezone.utc)
-            # Reputation with Economic Skin: Stake returned to freelancer upon winning dispute
             stake_service.return_stake(db, contract.id, dispute_id=dispute.id)
+            stake_service.return_client_deposit(db, contract.id, dispute_id=dispute.id)
+            reputation_service.record_successful_release(db, contract.freelancer_user)
+            reputation_service.record_successful_release(db, contract.client_user)
+
+        elif resolution_status == DisputeStatus.RESOLVED_DEVELOPER_PAYOUT:
+            # Arbiter rules for freelancer. Client opened a frivolous dispute and lost.
+            milestone.status = MilestoneStatus.RELEASED
+            milestone.released_at = datetime.now(timezone.utc)
+            # Freelancer stake returned in full
+            stake_service.return_stake(db, contract.id, dispute_id=dispute.id)
+            # Client good-faith deposit is forfeited to freelancer as frivolous dispute penalty
+            stake_service.forfeit_client_deposit(db, contract.id, dispute_id=dispute.id)
+            # Update reputation
+            reputation_service.record_dispute_resolution(
+                db=db,
+                client=contract.client_user,
+                freelancer=contract.freelancer_user,
+                resolution_status=resolution_status,
+            )
+
         elif resolution_status == DisputeStatus.RESOLVED_CLIENT_REFUND:
-            # Write ledger entry FIRST
+            # Arbiter rules for client. Freelancer non-performance.
+            # Write ledger refund entry FIRST
             ledger_service.record_entry(
                 db=db,
                 contract_id=contract.id,
@@ -129,16 +152,17 @@ class DisputeService:
                 idempotency_key=f"refund_{dispute.id}",
             )
             milestone.status = MilestoneStatus.CANCELLED if hasattr(MilestoneStatus, "CANCELLED") else MilestoneStatus.PENDING
-            # Reputation with Economic Skin: Stake slashed upon losing dispute
+            # Client deposit returned in full
+            stake_service.return_client_deposit(db, contract.id, dispute_id=dispute.id)
+            # Freelancer stake PARTIALLY SLASHED (50% default), remainder returned to freelancer
             stake_service.slash_stake(db, contract.id, dispute_id=dispute.id)
-
-        # Update reputation based on arbitration decision
-        reputation_service.record_dispute_resolution(
-            db=db,
-            client=contract.client_user,
-            freelancer=contract.freelancer_user,
-            resolution_status=resolution_status,
-        )
+            # Update reputation
+            reputation_service.record_dispute_resolution(
+                db=db,
+                client=contract.client_user,
+                freelancer=contract.freelancer_user,
+                resolution_status=resolution_status,
+            )
 
         # Check if all other milestones are resolved
         active_disputes = (

@@ -51,13 +51,17 @@ class Settings(BaseSettings):
     FX_RATES_API_URL: str = "https://open.er-api.com/v6/latest/USD"
     FX_CACHE_TTL_SECONDS: int = 3600
 
-    # Reputation & Economic Skin (Staking & New Account Friction)
-    DEFAULT_STAKE_PERCENTAGE: float = 5.0  # 5% of contract value
-    NEW_ACCOUNT_STAKE_PERCENTAGE: float = 10.0  # 10% for new accounts without prior deal on high-value contracts
-    NEW_ACCOUNT_THRESHOLD_AMOUNT: float = 1000.0  # Threshold for high-value contract restriction ($1,000)
+    # Harmer's Graduated Staking & Dispute Protocol
+    DEFAULT_STAKE_PERCENTAGE: float = 10.0  # Fallback baseline
+    RATE_NEW_ACCOUNT: float = 10.0  # < 7 days OR 0 completed deals: 10%
+    RATE_EMERGING: float = 7.0  # 1-4 completed deals, no lost disputes: 7%
+    RATE_ESTABLISHED: float = 4.0  # 5-19 completed deals, dispute-loss rate < 10%: 4%
+    RATE_PROVEN: float = 2.0  # 20+ completed deals, dispute-loss rate < 5%: 2%
     NEW_ACCOUNT_AGE_DAYS: int = 7  # Accounts < 7 days old are considered new
     DEFAULT_NEW_ACCOUNT_TRUST_SCORE: float = 30.0  # New accounts start at 30 trust score
-    DEFAULT_SLASH_PERCENTAGE: float = 100.0  # 100% full slash on lost dispute (partial or full configurable)
+    DEFAULT_SLASH_PERCENTAGE: float = 50.0  # 50% partial slash by default (25-75% configurable)
+    MIN_SLASH_PERCENTAGE: float = 25.0
+    MAX_SLASH_PERCENTAGE: float = 75.0
 
 
 @lru_cache()
