@@ -14,7 +14,7 @@ class LedgerEntry(Base):
     __tablename__ = "ledger_entries"
 
     id = Column(String(32), primary_key=True, default=generate_ledger_id)
-    contract_id = Column(String(32), ForeignKey("contracts.id", ondelete="CASCADE"), nullable=False, index=True)
+    contract_id = Column(String(32), ForeignKey("contracts.id", ondelete="RESTRICT"), nullable=False, index=True)
     milestone_id = Column(String(32), nullable=True, index=True)
     entry_type = Column(SQLEnum(LedgerEntryType), nullable=False, index=True)
     amount = Column(Float, nullable=False)

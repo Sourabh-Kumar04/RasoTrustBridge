@@ -102,7 +102,7 @@ class Contract(Base):
     ledger_entries = relationship(
         "LedgerEntry",
         back_populates="contract",
-        cascade="all, delete-orphan",
+        cascade="save-update, merge",
         order_by="LedgerEntry.created_at",
     )
     stake = relationship(
