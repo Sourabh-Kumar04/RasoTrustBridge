@@ -14,6 +14,7 @@ from app.models.user import User
 from app.models.notification import Notification
 from app.models.ledger import LedgerEntry
 from app.models.webhook import ProcessedWebhookDelivery
+from app.models.idempotency import IdempotencyRecord
 
 __all__ = [
     "ContractStatus",
@@ -34,4 +35,5 @@ __all__ = [
     "Notification",
     "LedgerEntry",
     "ProcessedWebhookDelivery",
+    "IdempotencyRecord",
 ]

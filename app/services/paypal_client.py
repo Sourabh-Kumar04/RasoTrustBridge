@@ -1,8 +1,13 @@
 import time
 import uuid
+import json
+import hashlib
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 import httpx
 from app.config import get_settings
+from app.database import SessionLocal
+from app.models.idempotency import IdempotencyRecord
 
 
 class PayPalClient:
@@ -11,8 +16,8 @@ class PayPalClient:
     and Payouts API (releasing funds to international freelancers).
     Gracefully falls back to deterministic sandbox simulation when credentials
     are not configured in the environment.
-    Includes comprehensive idempotency handling with PayPal-Request-Id headers
-    and duplicate call detection.
+    Includes comprehensive idempotency handling with PayPal-Request-Id headers,
+    in-memory L1 cache, and database-backed persistent IdempotencyRecord storage.
     """
 
     def __init__(self):
@@ -20,6 +25,64 @@ class PayPalClient:
         self._access_token: Optional[str] = None
         self._token_expires_at: float = 0.0
         self._idempotency_store: Dict[str, Dict[str, Any]] = {}
+
+    def _check_db_idempotency(self, key: str) -> Optional[Dict[str, Any]]:
+        """Checks persistent database idempotency store."""
+        try:
+            db = SessionLocal()
+            try:
+                rec = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).first()
+                if rec:
+                    if rec.expires_at:
+                        now = datetime.now(timezone.utc)
+                        exp = rec.expires_at
+                        if exp.tzinfo is None:
+                            exp = exp.replace(tzinfo=timezone.utc)
+                        if exp < now:
+                            return None
+                    if rec.response_json:
+                        cached = json.loads(rec.response_json)
+                        cached["idempotency_replayed"] = True
+                        return cached
+                    return {
+                        "idempotency_replayed": True,
+                        "key": rec.key,
+                        "response_hash": rec.response_hash,
+                    }
+                return None
+            finally:
+                db.close()
+        except Exception:
+            return None
+
+    def _save_db_idempotency(self, key: str, response: Dict[str, Any], expires_seconds: int = 86400) -> None:
+        """Persists idempotency key and response in database."""
+        try:
+            db = SessionLocal()
+            try:
+                now = datetime.now(timezone.utc)
+                resp_str = json.dumps(response, default=str)
+                resp_hash = hashlib.sha256(resp_str.encode("utf-8")).hexdigest()
+                rec = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).first()
+                if not rec:
+                    rec = IdempotencyRecord(
+                        key=key,
+                        response_hash=resp_hash,
+                        response_json=resp_str,
+                        created_at=now,
+                        expires_at=now + timedelta(seconds=expires_seconds),
+                    )
+                    db.add(rec)
+                else:
+                    rec.response_hash = resp_hash
+                    rec.response_json = resp_str
+                db.commit()
+            except Exception:
+                db.rollback()
+            finally:
+                db.close()
+        except Exception:
+            pass
 
     @property
     def is_configured(self) -> bool:
@@ -71,6 +134,11 @@ class PayPalClient:
             cached["idempotency_replayed"] = True
             return cached
 
+        db_cached = self._check_db_idempotency(idem_key)
+        if db_cached is not None:
+            self._idempotency_store[idem_key] = db_cached
+            return db_cached
+
         if not self.is_configured:
             order_id = f"ORDER-SANDBOX-{uuid.uuid4().hex[:10].upper()}"
             res = {
@@ -83,6 +151,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
+            self._save_db_idempotency(idem_key, res)
             return res
 
         token = await self.get_access_token()
@@ -134,6 +203,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
+            self._save_db_idempotency(idem_key, res)
             return res
 
     async def capture_order(
@@ -151,6 +221,11 @@ class PayPalClient:
             cached["idempotency_replayed"] = True
             return cached
 
+        db_cached = self._check_db_idempotency(idem_key)
+        if db_cached is not None:
+            self._idempotency_store[idem_key] = db_cached
+            return db_cached
+
         if not self.is_configured or order_id.startswith("ORDER-SANDBOX-"):
             capture_id = f"CAP-SANDBOX-{uuid.uuid4().hex[:10].upper()}"
             res = {
@@ -162,6 +237,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
+            self._save_db_idempotency(idem_key, res)
             return res
 
         token = await self.get_access_token()
@@ -200,6 +276,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
+            self._save_db_idempotency(idem_key, res)
             return res
 
     async def create_payout(
@@ -222,6 +299,11 @@ class PayPalClient:
             cached["idempotency_replayed"] = True
             return cached
 
+        db_cached = self._check_db_idempotency(idem_key)
+        if db_cached is not None:
+            self._idempotency_store[idem_key] = db_cached
+            return db_cached
+
         if not self.is_configured:
             batch_id = f"PAYOUT-SANDBOX-BATCH-{uuid.uuid4().hex[:8].upper()}"
             item_id = f"PAYOUT-ITEM-{uuid.uuid4().hex[:8].upper()}"
@@ -236,6 +318,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
+            self._save_db_idempotency(idem_key, res)
             return res
 
         token = await self.get_access_token()
@@ -282,6 +365,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
+            self._save_db_idempotency(idem_key, res)
             return res
 
 
