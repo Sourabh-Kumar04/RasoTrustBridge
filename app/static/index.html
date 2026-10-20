@@ -486,6 +486,30 @@
                 </select>
               </div>
             </div>
+
+            <!-- BUYER USER-SET BOUNDS -->
+            <div class="grid grid-cols-2 gap-4 hairline-t pt-4">
+              <div>
+                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">
+                  Never go above (hard cap)
+                </label>
+                <div class="relative">
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs font-mono">$</span>
+                  <input id="buyer-max-budget" type="number" step="50" class="form-input pl-7 font-mono text-sm" placeholder="Pre-filled from brief">
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">Buyer agent will reject any deal above this ceiling.</p>
+              </div>
+              <div>
+                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">
+                  Max Stretch (% over budget)
+                </label>
+                <div class="relative">
+                  <input id="buyer-over-budget-pct" type="number" step="1" min="0" max="100" value="0" class="form-input pr-7 font-mono text-sm" placeholder="0">
+                  <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 text-xs font-mono">%</span>
+                </div>
+                <p class="text-[10px] text-slate-400 mt-1">Default 0% = strict hard cap, zero stretch.</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -530,6 +554,18 @@
                 </select>
               </div>
             </div>
+
+            <!-- SELLER USER-SET BOUNDS -->
+            <div class="hairline-t pt-4">
+              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">
+                Never agree below (hard floor)
+              </label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs font-mono">$</span>
+                <input id="seller-min-price" type="number" step="50" class="form-input pl-7 font-mono text-sm" placeholder="Pre-filled from brief (0 = no floor)">
+              </div>
+              <p class="text-[10px] text-slate-400 mt-1">Seller agent will never agree to a payout below this floor.</p>
+            </div>
           </div>
         </div>
       </div>
@@ -540,10 +576,19 @@
           <div class="flex items-center space-x-2">
             <label class="font-mono text-xs uppercase text-slate-500">Max Rounds:</label>
             <select id="neg-max-rounds" class="form-select font-mono text-xs w-20 py-1">
-              <option value="3" selected>3</option>
+              <option value="5" selected>5</option>
+              <option value="3">3</option>
               <option value="2">2</option>
               <option value="4">4</option>
             </select>
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <label class="font-mono text-xs uppercase text-slate-500">Walk-Away Gap:</label>
+            <div class="flex items-center">
+              <input type="number" id="neg-walk-away-gap" value="40" min="5" max="100" class="form-input font-mono text-xs w-16 py-1 px-2 text-right">
+              <span class="text-xs text-slate-500 ml-1">%</span>
+            </div>
           </div>
 
           <div class="flex items-center space-x-2">
@@ -568,6 +613,18 @@
 
       <!-- LIVE NEGOTIATION TRANSCRIPT STREAM -->
       <div id="negotiation-results-container" class="hidden space-y-8">
+        <!-- NO DEAL TERMINATION BANNER -->
+        <div id="neg-no-deal-banner" class="hidden hairline-all p-6 bg-amber-50/80 border-amber-300 space-y-2">
+          <div class="inline-flex items-center space-x-2 font-mono text-xs text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+            <span>NEGOTIATION TERMINATED — NO DEAL</span>
+          </div>
+          <div class="text-xl font-semibold text-slate-900" id="neg-no-deal-headline">
+            Terms Irreconcilable Under Enforced Bounds
+          </div>
+          <p class="text-sm text-slate-700 font-mono" id="neg-no-deal-reason"></p>
+        </div>
+
         <!-- CONSENSUS BANNER -->
         <div id="neg-consensus-banner" class="hidden hairline-all p-6 bg-white space-y-4">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -588,6 +645,39 @@
                 <span>View Contract #<span id="neg-created-contract-id"></span></span>
                 <span>→</span>
               </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- ACTIVE BOUNDS SUMMARY CARD (ABOVE TRANSCRIPT) -->
+        <div id="neg-bounds-summary-bar" class="hairline-all p-5 bg-slate-50 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+              <span class="font-mono text-xs uppercase text-slate-700 font-semibold tracking-wider">Active Negotiation Bounds</span>
+            </div>
+            <span class="font-mono text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">Fully User-Bounded Policy</span>
+          </div>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+            <div class="p-3 bg-white hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-slate-400">Buyer Hard Cap</div>
+              <div class="text-sm font-semibold text-slate-900" id="neg-bound-buyer-cap">$3,000.00</div>
+              <div class="text-[10px] text-slate-500" id="neg-bound-stretch">Stretch: 0%</div>
+            </div>
+            <div class="p-3 bg-white hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-slate-400">Seller Hard Floor</div>
+              <div class="text-sm font-semibold text-slate-900" id="neg-bound-seller-floor">$0.00</div>
+              <div class="text-[10px] text-slate-500">Floor: Strict Minimum</div>
+            </div>
+            <div class="p-3 bg-white hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-slate-400">Walk-Away Gap</div>
+              <div class="text-sm font-semibold text-slate-900" id="neg-bound-gap">40.0%</div>
+              <div class="text-[10px] text-slate-500">Deadlock Limit</div>
+            </div>
+            <div class="p-3 bg-white hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-slate-400">Deliberation Limit</div>
+              <div class="text-sm font-semibold text-slate-900" id="neg-bound-rounds">5 Rounds</div>
+              <div class="text-[10px] text-slate-500" id="neg-bound-stagnation">Stagnation: 3 rds</div>
             </div>
           </div>
         </div>

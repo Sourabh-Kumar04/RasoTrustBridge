@@ -53,6 +53,11 @@ const TrustBridgeApp = {
         this.fetchNotifications();
       }
     }, 30000);
+
+    // Sync negotiator bounds from briefs
+    document.getElementById('buyer-brief')?.addEventListener('input', () => this.syncBoundsFromBriefs(false));
+    document.getElementById('seller-brief')?.addEventListener('input', () => this.syncBoundsFromBriefs(false));
+    this.syncBoundsFromBriefs(false);
   },
 
   handleRouting() {
@@ -589,6 +594,33 @@ const TrustBridgeApp = {
     }
   },
 
+  extractPriceFromBrief(text) {
+    if (!text) return null;
+    const matchDollar = text.match(/\$\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)/);
+    if (matchDollar) return parseFloat(matchDollar[1].replace(/,/g, ''));
+    const matchWord = text.match(/(?:budget|ask|price|rate|cost)\s*(?:is|of|:)?\s*([0-9]+(?:,[0-9]{3})*)/i);
+    if (matchWord) return parseFloat(matchWord[1].replace(/,/g, ''));
+    const matchDigits = text.match(/\b([0-9]{3,5})\b/);
+    if (matchDigits) return parseFloat(matchDigits[1]);
+    return null;
+  },
+
+  syncBoundsFromBriefs(force = false) {
+    const buyerBrief = document.getElementById('buyer-brief')?.value || '';
+    const sellerBrief = document.getElementById('seller-brief')?.value || '';
+    const buyerCapInput = document.getElementById('buyer-max-budget');
+    const sellerFloorInput = document.getElementById('seller-min-price');
+
+    if (buyerCapInput && (force || !buyerCapInput.value)) {
+      const p = this.extractPriceFromBrief(buyerBrief);
+      if (p !== null) buyerCapInput.value = p;
+    }
+    if (sellerFloorInput && (force || !sellerFloorInput.value)) {
+      const p = this.extractPriceFromBrief(sellerBrief);
+      if (p !== null) sellerFloorInput.value = p;
+    }
+  },
+
   loadNegotiatorPreset(key) {
     if (key === 'fintech') {
       document.getElementById('buyer-brief').value = 'Need high-performance payment API built with FastAPI and PostgreSQL. Budget $3,000 USD, timeline 21 days.';
@@ -600,6 +632,7 @@ const TrustBridgeApp = {
       document.getElementById('buyer-brief').value = 'Cross-platform mobile app in React Native for logistics tracking. Budget $2,200 USD, timeline 14 days.';
       document.getElementById('seller-brief').value = 'Mobile engineering specialist. Rate is $3,000 USD for complete iOS and Android build with offline caching.';
     }
+    this.syncBoundsFromBriefs(true);
     this.showToast(`Loaded "${key.toUpperCase()}" scenario preset`, 'info');
   },
 
@@ -612,6 +645,16 @@ const TrustBridgeApp = {
     const engineSelect = document.getElementById('neg-engine-select').value;
     const forceRuleBased = (engineSelect === 'rule_based');
 
+    const buyerCapInput = document.getElementById('buyer-max-budget');
+    const sellerFloorInput = document.getElementById('seller-min-price');
+    const stretchInput = document.getElementById('buyer-over-budget-pct');
+    const walkAwayInput = document.getElementById('neg-walk-away-gap');
+
+    const buyerCap = buyerCapInput && buyerCapInput.value !== '' ? parseFloat(buyerCapInput.value) : null;
+    const sellerFloor = sellerFloorInput && sellerFloorInput.value !== '' ? parseFloat(sellerFloorInput.value) : null;
+    const stretchPct = stretchInput && stretchInput.value !== '' ? parseFloat(stretchInput.value) : 0.0;
+    const walkAwayGap = walkAwayInput && walkAwayInput.value !== '' ? parseFloat(walkAwayInput.value) : 40.0;
+
     const payload = {
       buyer_brief: document.getElementById('buyer-brief').value.trim(),
       seller_brief: document.getElementById('seller-brief').value.trim(),
@@ -623,16 +666,24 @@ const TrustBridgeApp = {
       developer_country: document.getElementById('seller-country').value.trim(),
       base_currency: document.getElementById('buyer-currency').value,
       payout_currency: document.getElementById('seller-currency').value,
-      max_rounds: parseInt(document.getElementById('neg-max-rounds').value, 10),
+      max_rounds: parseInt(document.getElementById('neg-max-rounds').value, 10) || 5,
       auto_create_contract: document.getElementById('neg-auto-contract').checked,
       force_rule_based: forceRuleBased,
+      buyer_max_budget: !isNaN(buyerCap) ? buyerCap : null,
+      seller_min_price: !isNaN(sellerFloor) ? sellerFloor : null,
+      max_over_budget_pct: !isNaN(stretchPct) ? stretchPct : 0.0,
+      walk_away_gap_pct: !isNaN(walkAwayGap) ? walkAwayGap : 40.0,
     };
 
     try {
       const response = await this.apiRequest('/negotiate', 'POST', payload);
       this.state.lastNegotiation = response;
       this.renderNegotiationResults(response);
-      this.showToast('Negotiation concluded successfully! Terms agreed.', 'success');
+      if (response.status === 'no_deal') {
+        this.showToast('Negotiation concluded: NO DEAL (bounds exceeded).', 'warning');
+      } else {
+        this.showToast('Negotiation concluded successfully! Terms agreed.', 'success');
+      }
     } catch (e) {
       this.showToast(`Negotiation failed: ${e.message}`, 'error');
     } finally {
@@ -648,19 +699,47 @@ const TrustBridgeApp = {
     document.getElementById('neg-rounds-count').textContent = `${data.total_rounds} Rounds Completed`;
     document.getElementById('neg-model-used-badge').textContent = `ENGINE: ${data.model_used}`;
 
-    // Consensus Banner
-    if (data.agreed_terms) {
-      const banner = document.getElementById('neg-consensus-banner');
-      banner.classList.remove('hidden');
-      document.getElementById('neg-agreed-headline').textContent = 
-        `Agreed at $${data.agreed_terms.final_price.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${data.agreed_terms.base_currency}`;
-      document.getElementById('neg-concession-summary').textContent = data.agreed_terms.concession_summary;
+    // Render Active Enforced Bounds Card above transcript
+    if (data.bounds) {
+      const b = data.bounds;
+      const bCapEl = document.getElementById('neg-bound-buyer-cap');
+      if (bCapEl) bCapEl.textContent = `$${b.effective_buyer_cap.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      const stretchEl = document.getElementById('neg-bound-stretch');
+      if (stretchEl) stretchEl.textContent = `Cap: $${b.buyer_max_budget.toLocaleString('en-US')} (+${b.max_over_budget_pct}% stretch)`;
+      const sFloorEl = document.getElementById('neg-bound-seller-floor');
+      if (sFloorEl) sFloorEl.textContent = `$${b.seller_min_price.toLocaleString('en-US', { minimumFractionDigits: 2 })}`;
+      const gapEl = document.getElementById('neg-bound-gap');
+      if (gapEl) gapEl.textContent = `${b.walk_away_gap_pct.toFixed(1)}%`;
+      const roundsEl = document.getElementById('neg-bound-rounds');
+      if (roundsEl) roundsEl.textContent = `${b.max_rounds} Rounds`;
+      const stagEl = document.getElementById('neg-bound-stagnation');
+      if (stagEl) stagEl.textContent = `Stagnation: ${Math.min(3, b.max_rounds)} rds`;
+    }
 
-      if (data.contract_id) {
-        const linkBox = document.getElementById('neg-contract-link-box');
-        linkBox.classList.remove('hidden');
-        document.getElementById('neg-created-contract-id').textContent = data.contract_id.substring(0, 8);
-        document.getElementById('neg-view-contract-btn').href = `#/contracts/${data.contract_id}`;
+    const consensusBanner = document.getElementById('neg-consensus-banner');
+    const noDealBanner = document.getElementById('neg-no-deal-banner');
+
+    if (data.status === 'no_deal') {
+      if (consensusBanner) consensusBanner.classList.add('hidden');
+      if (noDealBanner) {
+        noDealBanner.classList.remove('hidden');
+        document.getElementById('neg-no-deal-reason').textContent =
+          data.termination_reason || 'Terms are irreconcilable under active bounds.';
+      }
+    } else if (data.agreed_terms) {
+      if (noDealBanner) noDealBanner.classList.add('hidden');
+      if (consensusBanner) {
+        consensusBanner.classList.remove('hidden');
+        document.getElementById('neg-agreed-headline').textContent = 
+          `Agreed at $${data.agreed_terms.final_price.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${data.agreed_terms.base_currency}`;
+        document.getElementById('neg-concession-summary').textContent = data.agreed_terms.concession_summary;
+
+        if (data.contract_id) {
+          const linkBox = document.getElementById('neg-contract-link-box');
+          linkBox.classList.remove('hidden');
+          document.getElementById('neg-created-contract-id').textContent = data.contract_id.substring(0, 8);
+          document.getElementById('neg-view-contract-btn').href = `#/contracts/${data.contract_id}`;
+        }
       }
     }
 
