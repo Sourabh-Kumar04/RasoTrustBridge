@@ -40,18 +40,18 @@ const TrustBridgeApp = {
       if (i === stepNum) {
         node.classList.add('active-step');
         if (numSpan) {
-          numSpan.className = 'flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#111215] text-[#FFFFFF]';
+          numSpan.className = 'flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#003087] text-[#FFFFFF]';
         }
         if (stageSpan) {
-          stageSpan.className = 'font-mono text-[10px] text-[#C2410C] font-semibold uppercase tracking-wider';
+          stageSpan.className = 'font-mono text-[10px] text-[#0079C1] font-semibold uppercase tracking-wider';
         }
       } else {
         node.classList.remove('active-step');
         if (numSpan) {
-          numSpan.className = 'flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#F3F1EC] text-[#4A4D55]';
+          numSpan.className = 'flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#F0F4F9] text-[#3F4D63]';
         }
         if (stageSpan) {
-          stageSpan.className = 'font-mono text-[10px] text-[#82858F] font-semibold uppercase tracking-wider';
+          stageSpan.className = 'font-mono text-[10px] text-[#62718A] font-semibold uppercase tracking-wider';
         }
       }
     }
@@ -75,6 +75,7 @@ const TrustBridgeApp = {
     this.initAuth();
     this.handleRouting();
     this.fetchLiveFXRates();
+    this.loadLandingDeal();
 
     // Close notification dropdown when clicking outside
     document.addEventListener('click', (e) => {
@@ -107,14 +108,15 @@ const TrustBridgeApp = {
 
     // Reset active nav styles
     document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.remove('text-[#111215]', 'border-[#111215]', 'text-slate-950', 'border-slate-900');
-      link.classList.add('text-[#82858F]', 'border-transparent', 'text-slate-500');
+      link.classList.remove('text-[#0C1A30]', 'border-[#003087]', 'text-slate-950', 'border-slate-900');
+      link.classList.add('text-[#62718A]', 'border-transparent', 'text-slate-500');
     });
 
     if (hash === '#/' || hash === '#' || !hash) {
       document.getElementById('view-landing')?.classList.remove('hidden');
       this.setActiveNav('nav-landing');
       this.initFlowAnimation();
+      this.loadLandingDeal();
     } else {
       if (this.flowTimer) clearInterval(this.flowTimer);
       if (hash.startsWith('#/dashboard')) {
@@ -136,6 +138,7 @@ const TrustBridgeApp = {
         document.getElementById('view-landing')?.classList.remove('hidden');
         this.setActiveNav('nav-landing');
         this.initFlowAnimation();
+      this.loadLandingDeal();
       }
     }
 
@@ -145,8 +148,8 @@ const TrustBridgeApp = {
   setActiveNav(id) {
     const el = document.getElementById(id);
     if (el) {
-      el.classList.remove('text-[#82858F]', 'border-transparent', 'text-slate-500');
-      el.classList.add('text-[#111215]', 'border-[#111215]');
+      el.classList.remove('text-[#62718A]', 'border-transparent', 'text-slate-500');
+      el.classList.add('text-[#0C1A30]', 'border-[#003087]');
     }
   },
 
@@ -381,7 +384,7 @@ const TrustBridgeApp = {
           </div>
           ${isUnread ? `
             <button onclick="TrustBridgeApp.markNotificationRead('${n.id}')" title="Mark as read" class="text-[11px] text-slate-400 hover:text-slate-700 font-mono">
-              ✓
+              
             </button>
           ` : ''}
         </div>
@@ -476,12 +479,12 @@ const TrustBridgeApp = {
 
     const toast = document.createElement('div');
     const dotColor = type === 'success' 
-      ? 'bg-[#14532D]' 
+      ? 'bg-[#0D6832]' 
       : (type === 'error' || type === 'warning')
-      ? 'bg-[#C2410C]' 
-      : 'bg-[#111215]';
+      ? 'bg-[#0079C1]' 
+      : 'bg-[#0C1A30]';
 
-    toast.className = `p-4 bg-[#FFFFFF] text-[#111215] border border-[#E2DFD8] shadow-xl text-xs font-mono flex items-center space-x-3 pointer-events-auto transition-all duration-300 rounded-[2px] max-w-md`;
+    toast.className = `p-4 bg-[#FFFFFF] text-[#0C1A30] border border-[#E1E7EE] shadow-card rounded-xl text-xs font-mono flex items-center space-x-3 pointer-events-auto transition-all duration-300 rounded-[2px] max-w-md`;
     toast.innerHTML = `
       <span class="w-2 h-2 rounded-full ${dotColor} shrink-0"></span>
       <span class="flex-grow leading-relaxed">${message}</span>
@@ -533,6 +536,93 @@ const TrustBridgeApp = {
     }
   },
 
+  async loadLandingDeal() {
+    try {
+      const contracts = await this.apiRequest('/contracts');
+      this.state.contracts = contracts || [];
+      if (contracts && contracts.length > 0) {
+        this.renderLandingLiveDeal(contracts[0]);
+      }
+    } catch (e) {
+      console.warn('Could not load landing deal:', e.message);
+    }
+  },
+
+  renderLandingLiveDeal(c) {
+    const container = document.getElementById('landing-live-deal-container');
+    if (!container || !c) return;
+    const rate = c.locked_fx_rate || 84.50;
+    const payoutTotal = (c.total_amount * rate).toLocaleString('en-US', { maximumFractionDigits: 2 });
+    const totalMilestones = (c.milestones || []).length;
+    const verifiedMilestones = (c.milestones || []).filter(m => m.status === 'VERIFIED' || m.status === 'RELEASED').length;
+
+    let livingStatus = `In Progress • Waiting for deliverables from ${this.escapeHtml(c.developer_name)}. Normal response: 1.4 days.`;
+    if (c.status === 'DRAFT') {
+      livingStatus = `Formulated • Awaiting buyer dual-custody authorization. Funds protected.`;
+    } else if (c.status === 'COMPLETED') {
+      livingStatus = `Settled • All milestones verified and released with zero currency slippage.`;
+    }
+
+    container.innerHTML = `
+      <div class="bg-[#FFFFFF] hairline-all rounded-xl p-6 space-y-5 shadow-card">
+        <div class="flex items-center justify-between hairline-b pb-3">
+          <div class="flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-[#0D6832] animate-pulse"></span>
+            <span class="font-mono text-xs font-semibold text-[#003087] uppercase tracking-wider">Live Deal in Escrow</span>
+          </div>
+          <span class="font-mono text-[11px] text-[#62718A]">${this.escapeHtml(c.id)}</span>
+        </div>
+
+        <div class="space-y-1">
+          <div class="font-serif text-lg font-medium text-[#0C1A30]">${this.escapeHtml(c.title)}</div>
+          <div class="font-mono text-xs text-[#62718A]">${this.escapeHtml(c.client_name)} (${c.client_country || 'US'}) ↔ ${this.escapeHtml(c.developer_name)} (${c.developer_country || 'IN'})</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3 p-3.5 bg-[#F0F7FC] rounded-lg font-mono text-xs border border-[#BAE0F8]">
+          <div>
+            <div class="text-[10px] text-[#62718A] uppercase">Vault Capital Held</div>
+            <div class="text-base font-semibold text-[#003087]">$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}</div>
+            <div class="text-[10px] text-[#0D6832]">Dual-Custody Locked</div>
+          </div>
+          <div>
+            <div class="text-[10px] text-[#62718A] uppercase">Guaranteed Payout</div>
+            <div class="text-base font-semibold text-[#0C1A30]">${c.payout_currency} ${payoutTotal}</div>
+            <div class="text-[10px] text-[#3F4D63]">Locked @ ${rate.toFixed(2)} ${c.base_currency}/${c.payout_currency}</div>
+          </div>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex items-center justify-between font-mono text-[11px] text-[#62718A]">
+            <span>ESCROW LIFECYCLE</span>
+            <span class="text-[#0D6832] font-medium">${c.status} • ${verifiedMilestones}/${totalMilestones} Milestones Settled</span>
+          </div>
+          <div class="grid grid-cols-4 gap-1.5 text-center font-mono text-[10px]">
+            <div class="py-1 bg-[#003087] text-white rounded-full">01 Funded</div>
+            <div class="py-1 ${c.status === 'ACTIVE' || c.status === 'COMPLETED' ? 'bg-[#0D6832] text-white' : 'bg-[#F0F4F9] text-[#62718A]'} rounded-full">02 Held</div>
+            <div class="py-1 ${verifiedMilestones > 0 ? 'bg-[#0079C1] text-white' : 'bg-[#F0F7FC] text-[#0079C1] border border-[#BAE0F8]'} rounded-full">03 Verify</div>
+            <div class="py-1 ${c.status === 'COMPLETED' ? 'bg-[#0D6832] text-white' : 'bg-[#F0F4F9] text-[#62718A]'} rounded-full">04 Release</div>
+          </div>
+        </div>
+
+        <div class="living-badge w-full">
+          <span class="living-pulse-dot"></span>
+          <span class="truncate">${livingStatus}</span>
+        </div>
+
+        <div class="pt-2 hairline-t flex items-center justify-between">
+          <button onclick="TrustBridgeApp.openReceiptModal('${c.id}')" class="font-mono text-xs text-[#0079C1] hover:underline flex items-center space-x-1">
+            <span>View Escrow Receipt</span>
+            <span>↗</span>
+          </button>
+          <a href="#/contracts/${c.id}" class="btn-primary text-xs py-2 px-3.5">
+            <span>Inspect Full Dossier</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+    `;
+  },
+
   renderDashboard() {
     const contracts = this.state.contracts;
     let totalEscrow = 0;
@@ -562,7 +652,7 @@ const TrustBridgeApp = {
     if (!this.state.token) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="text-center py-16 text-[#82858F] font-mono text-xs">
+          <td colspan="7" class="text-center py-16 text-[#62718A] font-mono text-xs">
             Sign in to view your personalized portfolio contracts and escrow status.
             <div class="pt-4 flex items-center justify-center space-x-3">
               <button onclick="TrustBridgeApp.openAuthModal('login')" class="btn-primary text-xs py-1.5 px-4">Sign In</button>
@@ -577,8 +667,18 @@ const TrustBridgeApp = {
     if (contracts.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="text-center py-16 text-[#82858F] font-mono text-xs">
-            No escrow contracts registered yet. Launch an AI negotiation or create a contract from a brief.
+          <td colspan="7" class="text-center py-14 text-[#62718A] font-sans text-xs">
+            <div class="max-w-sm mx-auto space-y-3">
+              <div class="w-12 h-12 rounded-full bg-[#F0F7FC] text-[#0079C1] flex items-center justify-center mx-auto border border-[#BAE0F8]">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+              </div>
+              <div class="font-semibold text-sm text-[#0C1A30]">No Registered Escrow Contracts</div>
+              <p class="text-[#62718A] text-xs leading-relaxed">No bilateral agreements in escrow. Build a contract from a technical brief or execute an agent negotiation.</p>
+              <div class="pt-2 flex items-center justify-center gap-2.5">
+                <a href="#/builder" class="btn-primary text-xs py-1.5 px-4">Create Contract</a>
+                <a href="#/negotiate" class="btn-secondary text-xs py-1.5 px-4">Start Negotiation</a>
+              </div>
+            </div>
           </td>
         </tr>
       `;
@@ -619,7 +719,7 @@ const TrustBridgeApp = {
         actionCta = `<a href="#/contracts/${c.id}" class="btn-accent text-xs">Fund Escrow →</a>`;
       } else if (c.status === 'ACTIVE') {
         if (hasVerified) {
-          actionCta = `<a href="#/contracts/${c.id}" class="btn-primary text-xs bg-[#14532D] border-[#14532D]">Release Payout →</a>`;
+          actionCta = `<a href="#/contracts/${c.id}" class="btn-primary text-xs bg-[#0D6832] border-[#0D6832]">Release Payout →</a>`;
         } else if (hasSubmitted) {
           actionCta = `<a href="#/contracts/${c.id}" class="btn-primary text-xs">Verify Evidence →</a>`;
         }
@@ -628,30 +728,30 @@ const TrustBridgeApp = {
       return `
         <tr>
           <td>
-            <div class="font-medium text-[#111215] font-serif text-base">${this.escapeHtml(c.title)}</div>
-            <div class="text-[11px] text-[#82858F] font-mono truncate max-w-xs mb-1.5">${this.escapeHtml(c.id)}</div>
+            <div class="font-medium text-[#0C1A30] font-serif text-base">${this.escapeHtml(c.title)}</div>
+            <div class="text-[11px] text-[#62718A] font-mono truncate max-w-xs mb-1.5">${this.escapeHtml(c.id)}</div>
             <!-- LIVING STATUS BADGE (Lenny) -->
-            <div class="text-[11px] font-mono text-[#4A4D55] bg-[#F8F7F4] p-1.5 border border-[#E2DFD8] rounded-[2px] leading-tight">
+            <div class="text-[11px] font-mono text-[#3F4D63] bg-[#F8F7F4] p-1.5 border border-[#E1E7EE] rounded-[2px] leading-tight">
               ${livingStatus}
             </div>
           </td>
           <td>
-            <div class="text-xs text-[#111215]">${this.escapeHtml(c.client_name)} <span class="font-mono text-[#82858F]">(${c.client_country})</span></div>
-            <div class="text-xs text-[#4A4D55]">→ ${this.escapeHtml(c.developer_name)} <span class="font-mono text-[#82858F]">(${c.developer_country})</span></div>
+            <div class="text-xs text-[#0C1A30]">${this.escapeHtml(c.client_name)} <span class="font-mono text-[#62718A]">(${c.client_country})</span></div>
+            <div class="text-xs text-[#3F4D63]">→ ${this.escapeHtml(c.developer_name)} <span class="font-mono text-[#62718A]">(${c.developer_country})</span></div>
           </td>
           <td class="font-mono">
-            <div class="font-semibold text-[#111215]">$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}</div>
-            <div class="text-xs text-[#82858F]">≈ ${c.payout_currency} ${payoutVal}</div>
+            <div class="font-semibold text-[#0C1A30]">$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}</div>
+            <div class="text-xs text-[#62718A]">≈ ${c.payout_currency} ${payoutVal}</div>
           </td>
           <td class="font-mono text-xs">
-            <span class="text-[#111215]">${c.fx_strategy}</span>
-            <div class="text-[#82858F]">@ ${rate.toFixed(2)}</div>
+            <span class="text-[#0C1A30]">${c.fx_strategy}</span>
+            <div class="text-[#62718A]">@ ${rate.toFixed(2)}</div>
           </td>
           <td>
             <div class="flex items-center space-x-2">
-              <span class="font-mono text-xs font-medium text-[#111215]">${verifiedMilestones}/${totalMilestones}</span>
-              <div class="w-16 h-1.5 bg-[#E2DFD8] rounded-[1px] overflow-hidden">
-                <div class="h-full bg-[#111215]" style="width: ${totalMilestones ? (verifiedMilestones/totalMilestones)*100 : 0}%"></div>
+              <span class="font-mono text-xs font-medium text-[#0C1A30]">${verifiedMilestones}/${totalMilestones}</span>
+              <div class="w-16 h-1.5 bg-[#E1E7EE] rounded-[1px] overflow-hidden">
+                <div class="h-full bg-[#0C1A30]" style="width: ${totalMilestones ? (verifiedMilestones/totalMilestones)*100 : 0}%"></div>
               </div>
             </div>
           </td>
@@ -660,7 +760,7 @@ const TrustBridgeApp = {
           </td>
           <td class="text-right space-y-1">
             <div>${actionCta}</div>
-            <button onclick="TrustBridgeApp.openReceiptModal('rcpt_demo_01')" class="font-mono text-[10px] text-[#82858F] hover:text-[#C2410C] transition inline-block">
+            <button onclick="TrustBridgeApp.openReceiptModal('${c.id}')" class="font-mono text-[10px] text-[#62718A] hover:text-[#0079C1] transition inline-block">
               Receipt ↗
             </button>
           </td>
@@ -685,99 +785,14 @@ const TrustBridgeApp = {
         return;
       }
     } catch (e) {
-      // fallback to demo seed
+      console.warn('No active negotiation found:', e.message);
     }
 
-    // Default seed negotiation to showcase visual deal formation immediately (Yubi + Zhuo)
-    const demoNegotiation = {
-      status: "consensus",
-      total_rounds: 3,
-      model_used: "llama3.2:3b",
-      rounds: [
-        {
-          round_number: 1,
-          price_gap: 1000.0,
-          status: "negotiating",
-          buyer_turn: {
-            sender: "buyer_agent",
-            sender_label: "Sarah Vance (Buyer)",
-            reasoning: "Strictly constrained by client $3,000 budget cap. Proposing standard 21-day timeline with dual-custody escrow.",
-            message: "We need high-performance PayPal dual-custody escrow with automated verification. Our maximum budget is $3,000 USD with delivery in 21 days.",
-            offer: { price: 3000.0, timeline_days: 21, fx_strategy: "LOCKED_AT_SIGNING", summary: "Initial buyer proposal" }
-          },
-          seller_turn: {
-            sender: "seller_agent",
-            sender_label: "Rahul Sharma (Seller)",
-            reasoning: "Comprehensive test suite and PayPal sandbox integration require $4,000 USD and 28 days to guarantee zero-defect deployment.",
-            message: "Full PayPal sandbox dual-custody and pytest CI integration require deep test coverage. My professional rate is $4,000 USD with 28 days.",
-            offer: { price: 4000.0, timeline_days: 28, fx_strategy: "LOCKED_AT_SIGNING", summary: "Initial seller proposal" }
-          }
-        },
-        {
-          round_number: 2,
-          price_gap: 400.0,
-          status: "concession_made",
-          buyer_turn: {
-            sender: "buyer_agent",
-            sender_label: "Sarah Vance (Buyer)",
-            reasoning: "Willing to stretch budget by $200 in exchange for structured 3-milestone payout gates.",
-            message: "We can increase our allocation to $3,200 USD if you structure the engagement across 3 verification gates.",
-            offer: { price: 3200.0, timeline_days: 22, fx_strategy: "LOCKED_AT_SIGNING", summary: "Buyer concession to $3,200" }
-          },
-          seller_turn: {
-            sender: "seller_agent",
-            sender_label: "Rahul Sharma (Seller)",
-            reasoning: "Narrowing spread: offering $3,600 USD and 25 days with full documentation.",
-            message: "I can meet you halfway at $3,600 USD and expedite delivery to 25 days with complete cryptographic PR verification.",
-            offer: { price: 3600.0, timeline_days: 25, fx_strategy: "LOCKED_AT_SIGNING", summary: "Seller concession to $3,600" }
-          }
-        },
-        {
-          round_number: 3,
-          price_gap: 0.0,
-          status: "agreed",
-          buyer_turn: {
-            sender: "buyer_agent",
-            sender_label: "Sarah Vance (Buyer)",
-            reasoning: "Final agreement reachable at $3,400 USD. Within allowable stretch guardrail.",
-            message: "We accept $3,400 USD with 24 business days horizon and locked USD/INR foreign exchange rate.",
-            offer: { price: 3400.0, timeline_days: 24, fx_strategy: "LOCKED_AT_SIGNING", summary: "Buyer agreement at $3,400" }
-          },
-          seller_turn: {
-            sender: "seller_agent",
-            sender_label: "Rahul Sharma (Seller)",
-            reasoning: "Accepting $3,400 USD. All margin criteria satisfied.",
-            message: "Deal confirmed. Locking terms at $3,400 USD, 24 days, and 3 phased escrow releases. Bilateral handshake sealed.",
-            offer: { price: 3400.0, timeline_days: 24, fx_strategy: "LOCKED_AT_SIGNING", summary: "Seller consensus confirmed" }
-          }
-        }
-      ],
-      agreed_terms: {
-        title: "Enterprise Payment Integration",
-        final_price: 3400.0,
-        timeline_days: 24,
-        fx_strategy: "LOCKED_AT_SIGNING",
-        base_currency: "USD",
-        payout_currency: "INR",
-        concession_summary: "Buyer conceded +$400.00; Seller conceded -$600.00. Compromise reached on 24-day sprint and 3 phased verification milestones.",
-        milestones: [
-          { order_index: 1, title: "Database Schema & Auth Engine", amount: 1000.0 },
-          { order_index: 2, title: "Dual-Custody Vault & Webhooks", amount: 1500.0 },
-          { order_index: 3, title: "Production CI/CD Telemetry", amount: 900.0 }
-        ]
-      },
-      contract_id: "ct_mobile_demo_1",
-      bounds: {
-        buyer_max_budget: 3000.0,
-        seller_min_price: 3200.0,
-        max_over_budget_pct: 15.0,
-        effective_buyer_cap: 3450.0,
-        walk_away_gap_pct: 40.0,
-        max_rounds: 5
-      }
-    };
-    this.state.lastNegotiation = demoNegotiation;
-    this.renderNegotiationResults(demoNegotiation, shouldScroll);
+    // Clean designed empty state when no negotiation session has run
+    const resultsContainer = document.getElementById('negotiation-results-container');
+    if (resultsContainer) resultsContainer.classList.add('hidden');
+    const emptyState = document.getElementById('negotiation-empty-state');
+    if (emptyState) emptyState.classList.remove('hidden');
   },
 
   extractPriceFromBrief(text) {
@@ -898,6 +913,8 @@ const TrustBridgeApp = {
   },
 
   renderNegotiationResults(data, autoScroll = false) {
+    const emptyState = document.getElementById('negotiation-empty-state');
+    if (emptyState) emptyState.classList.add('hidden');
     const container = document.getElementById('negotiation-results-container');
     container.classList.remove('hidden');
 
@@ -908,8 +925,8 @@ const TrustBridgeApp = {
 
     // Characters in a scene: Distinct voices, avatars, pacing (Julie Zhuo + Daniel Yubi)
     const firstRound = (data.rounds && data.rounds.length > 0) ? data.rounds[0] : null;
-    const buyerSender = firstRound ? firstRound.buyer_turn.sender_label : 'Sarah Vance (Buyer)';
-    const sellerSender = firstRound ? firstRound.seller_turn.sender_label : 'Rahul Sharma (Seller)';
+    const buyerSender = (firstRound && firstRound.buyer_turn && firstRound.buyer_turn.sender_label) ? firstRound.buyer_turn.sender_label : 'Buyer Agent';
+    const sellerSender = (firstRound && firstRound.seller_turn && firstRound.seller_turn.sender_label) ? firstRound.seller_turn.sender_label : 'Seller Agent';
 
     const sceneBuyerTitle = document.getElementById('scene-buyer-title');
     if (sceneBuyerTitle) sceneBuyerTitle.textContent = buyerSender;
@@ -921,10 +938,10 @@ const TrustBridgeApp = {
 
     if (data.status === 'no_deal') {
       if (scenePacingStatus) scenePacingStatus.textContent = `Deadlock Reached • Round ${data.total_rounds}`;
-      if (sceneImpasseBadge) sceneImpasseBadge.innerHTML = `<span class="text-[#991B1B]">⚠️ Impasse: Spread Exceeded Policy</span>`;
+      if (sceneImpasseBadge) sceneImpasseBadge.innerHTML = `<span class="text-[#C81E1E] flex items-center space-x-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg><span>Impasse: Spread Exceeded Policy</span></span>`;
     } else {
       if (scenePacingStatus) scenePacingStatus.textContent = `Consensus Formed • ${data.total_rounds} Rounds`;
-      if (sceneImpasseBadge) sceneImpasseBadge.innerHTML = `<span class="text-[#14532D]">🤝 Bilateral Agreement Sealed</span>`;
+      if (sceneImpasseBadge) sceneImpasseBadge.innerHTML = `<span class="text-[#0D6832] flex items-center space-x-1"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 11.5V14m0-2.5l3.5-3.5a2.121 2.121 0 013 3L11 13.5m-4-2L3.5 13a2.121 2.121 0 003 3L9 13.5m2 0l2.5 2.5a2.121 2.121 0 003-3L14 10.5m-3 3l2 2m1.5-6.5l3-3a2.121 2.121 0 013 3l-2.5 2.5"/></svg><span>Bilateral Agreement Sealed</span></span>`;
     }
 
     // Render Active Enforced Bounds Card
@@ -1043,32 +1060,32 @@ const TrustBridgeApp = {
           <div class="hairline-all p-4 bg-[#FFFFFF] space-y-2.5 rounded-[2px]">
             <div class="flex items-center justify-between font-mono text-xs">
               <div class="flex items-center space-x-2">
-                <span class="w-5 h-5 rounded-[2px] bg-[#111215] text-[#FFFFFF] flex items-center justify-center font-bold text-[10px]">
+                <span class="w-5 h-5 rounded-[2px] bg-[#003087] text-[#FFFFFF] flex items-center justify-center font-bold text-[10px]">
                   0${round.round_number}
                 </span>
-                <span class="font-semibold text-[#111215]">ROUND 0${round.round_number} OFFER DIFF</span>
+                <span class="font-semibold text-[#0C1A30]">ROUND 0${round.round_number} OFFER DIFF</span>
               </div>
               <div class="flex items-center space-x-2">
-                <span class="text-[#82858F]">Spread: $${round.price_gap.toFixed(2)}</span>
-                ${isConsensusRound ? `<span class="badge badge-verified">🤝 LOCKED SNAP</span>` : `<span class="badge badge-draft">DELIBERATING</span>`}
+                <span class="text-[#62718A]">Spread: $${round.price_gap.toFixed(2)}</span>
+                ${isConsensusRound ? `<span class="badge badge-verified">LOCKED SNAP</span>` : `<span class="badge badge-draft">DELIBERATING</span>`}
               </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-3 font-mono text-xs pt-1">
-              <div class="p-2.5 bg-[#F9F8F6] hairline-all flex items-center justify-between">
+              <div class="p-2.5 bg-[#F0F7FC] hairline-all flex items-center justify-between">
                 <div>
-                  <span class="text-[10px] text-[#82858F] block">BUYER PROPOSAL</span>
-                  <span class="font-semibold text-[#111215]">$${bOffer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+                  <span class="text-[10px] text-[#62718A] block">BUYER PROPOSAL</span>
+                  <span class="font-semibold text-[#0C1A30]">$${bOffer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
                 </div>
-                <span class="text-[#4A4D55] text-[11px]">${bOffer.timeline_days}d Horizon</span>
+                <span class="text-[#3F4D63] text-[11px]">${bOffer.timeline_days}d Horizon</span>
               </div>
 
-              <div class="p-2.5 bg-[#FFF7ED] border border-[#FDBA74] flex items-center justify-between">
+              <div class="p-2.5 bg-[#F0F7FC] border border-[#BAE0F8] flex items-center justify-between">
                 <div>
-                  <span class="text-[10px] text-[#C2410C] block">SELLER COUNTER</span>
-                  <span class="font-semibold text-[#C2410C]">$${sOffer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+                  <span class="text-[10px] text-[#0079C1] block">SELLER COUNTER</span>
+                  <span class="font-semibold text-[#0079C1]">$${sOffer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
                 </div>
-                <span class="text-[#C2410C] text-[11px]">${sOffer.timeline_days}d Horizon</span>
+                <span class="text-[#0079C1] text-[11px]">${sOffer.timeline_days}d Horizon</span>
               </div>
             </div>
           </div>
@@ -1090,36 +1107,36 @@ const TrustBridgeApp = {
 
         return `
           <div class="space-y-4 hairline-b pb-8 fade-in-turn" style="animation-delay: ${rIdx * 0.08}s;">
-            <div class="flex items-center justify-between font-mono text-xs text-[#82858F]">
+            <div class="flex items-center justify-between font-mono text-xs text-[#62718A]">
               <div class="flex items-center space-x-2">
-                <span class="w-1.5 h-1.5 rounded-full bg-[#111215]"></span>
-                <span class="font-semibold text-[#111215]">ROUND 0${round.round_number} DELIBERATION</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-[#0C1A30]"></span>
+                <span class="font-semibold text-[#0C1A30]">ROUND 0${round.round_number} DELIBERATION</span>
               </div>
-              <span class="font-medium px-2 py-0.5 rounded-[2px] bg-[#F3F1EC] text-[#111215]">Spread: $${round.price_gap.toFixed(2)} (${round.status.toUpperCase()})</span>
+              <span class="font-medium px-2 py-0.5 rounded-[2px] bg-[#F0F4F9] text-[#0C1A30]">Spread: $${round.price_gap.toFixed(2)} (${round.status.toUpperCase()})</span>
             </div>
 
             <!-- BUYER TURN -->
             <div class="hairline-all p-5 bg-[#FFFFFF] space-y-3">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div class="flex items-center space-x-2">
-                  <span class="w-2 h-2 bg-[#111215] rounded-[1px]"></span>
-                  <span class="font-mono text-xs font-semibold text-[#111215] uppercase tracking-wider">${this.escapeHtml(b.sender_label)}</span>
-                  <span class="font-mono text-[10px] text-[#82858F]">• Buyer Agent</span>
+                  <span class="w-2 h-2 bg-[#0C1A30] rounded-[1px]"></span>
+                  <span class="font-mono text-xs font-semibold text-[#0C1A30] uppercase tracking-wider">${this.escapeHtml(b.sender_label)}</span>
+                  <span class="font-mono text-[10px] text-[#62718A]">• Buyer Agent</span>
                 </div>
                 <div class="flex items-center space-x-3 font-mono text-xs">
-                  <span class="font-semibold text-[#111215] bg-[#F3F1EC] px-2.5 py-1 hairline-all rounded-[2px]">$${b.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
-                  <span class="text-[#82858F]">${b.offer.timeline_days} Days Horizon</span>
+                  <span class="font-semibold text-[#0C1A30] bg-[#F0F4F9] px-2.5 py-1 hairline-all rounded-[2px]">$${b.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+                  <span class="text-[#62718A]">${b.offer.timeline_days} Days Horizon</span>
                 </div>
               </div>
 
-              <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(b.message)}</p>
+              <p class="text-sm text-[#3F4D63] leading-relaxed font-light">${this.escapeHtml(b.message)}</p>
 
-              <details class="text-xs text-[#82858F] pt-2 hairline-t">
-                <summary class="cursor-pointer font-mono hover:text-[#111215] transition flex items-center space-x-1.5">
+              <details class="text-xs text-[#62718A] pt-2 hairline-t">
+                <summary class="cursor-pointer font-mono hover:text-[#0C1A30] transition flex items-center space-x-1.5">
                   <span>§</span>
                   <span>Agent Strategic Reasoning & Boundary Check</span>
                 </summary>
-                <div class="p-3 mt-2 bg-[#F9F8F6] hairline-all font-mono text-[11px] text-[#4A4D55] leading-normal rounded-[2px]">
+                <div class="p-3 mt-2 bg-[#F0F7FC] hairline-all font-mono text-[11px] text-[#3F4D63] leading-normal rounded-[2px]">
                   ${this.escapeHtml(b.reasoning)}
                 </div>
               </details>
@@ -1129,24 +1146,24 @@ const TrustBridgeApp = {
             <div class="hairline-all p-5 bg-[#FFFFFF] space-y-3">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div class="flex items-center space-x-2">
-                  <span class="w-2 h-2 bg-[#C2410C] rounded-[1px]"></span>
-                  <span class="font-mono text-xs font-semibold text-[#C2410C] uppercase tracking-wider">${this.escapeHtml(s.sender_label)}</span>
-                  <span class="font-mono text-[10px] text-[#82858F]">• Seller Agent</span>
+                  <span class="w-2 h-2 bg-[#0079C1] rounded-[1px]"></span>
+                  <span class="font-mono text-xs font-semibold text-[#0079C1] uppercase tracking-wider">${this.escapeHtml(s.sender_label)}</span>
+                  <span class="font-mono text-[10px] text-[#62718A]">• Seller Agent</span>
                 </div>
                 <div class="flex items-center space-x-3 font-mono text-xs">
-                  <span class="font-semibold text-[#C2410C] bg-[#FFF7ED] border border-[#FDBA74] px-2.5 py-1 rounded-[2px]">$${s.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
-                  <span class="text-[#82858F]">${s.offer.timeline_days} Days Horizon</span>
+                  <span class="font-semibold text-[#0079C1] bg-[#F0F7FC] border border-[#BAE0F8] px-2.5 py-1 rounded-[2px]">$${s.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+                  <span class="text-[#62718A]">${s.offer.timeline_days} Days Horizon</span>
                 </div>
               </div>
 
-              <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(s.message)}</p>
+              <p class="text-sm text-[#3F4D63] leading-relaxed font-light">${this.escapeHtml(s.message)}</p>
 
-              <details class="text-xs text-[#82858F] pt-2 hairline-t">
-                <summary class="cursor-pointer font-mono hover:text-[#111215] transition flex items-center space-x-1.5">
+              <details class="text-xs text-[#62718A] pt-2 hairline-t">
+                <summary class="cursor-pointer font-mono hover:text-[#0C1A30] transition flex items-center space-x-1.5">
                   <span>§</span>
                   <span>Agent Strategic Reasoning & Cost Margin Check</span>
                 </summary>
-                <div class="p-3 mt-2 bg-[#F9F8F6] hairline-all font-mono text-[11px] text-[#4A4D55] leading-normal rounded-[2px]">
+                <div class="p-3 mt-2 bg-[#F0F7FC] hairline-all font-mono text-[11px] text-[#3F4D63] leading-normal rounded-[2px]">
                   ${this.escapeHtml(s.reasoning)}
                 </div>
               </details>
@@ -1208,26 +1225,26 @@ const TrustBridgeApp = {
       <div class="p-6 space-y-4 bg-[#FFFFFF] hairline-all rounded-[2px]">
         <div class="flex items-center justify-between hairline-b pb-3">
           <div class="flex items-center space-x-3">
-            <span class="w-6 h-6 rounded-[2px] bg-[#111215] text-white font-mono text-xs flex items-center justify-center font-bold">
+            <span class="w-6 h-6 rounded-[2px] bg-[#0C1A30] text-white font-mono text-xs flex items-center justify-center font-bold">
               0${m.order_index || idx + 1}
             </span>
-            <span class="font-serif font-medium text-base text-[#111215]">${this.escapeHtml(m.title)}</span>
+            <span class="font-serif font-medium text-base text-[#0C1A30]">${this.escapeHtml(m.title)}</span>
           </div>
-          <div class="font-mono text-sm font-semibold text-[#111215]">
-            $${m.estimated_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span class="text-xs text-[#82858F] font-normal">(${(m.amount_percentage * 100).toFixed(0)}%)</span>
+          <div class="font-mono text-sm font-semibold text-[#0C1A30]">
+            $${m.estimated_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span class="text-xs text-[#62718A] font-normal">(${(m.amount_percentage * 100).toFixed(0)}%)</span>
           </div>
         </div>
 
-        <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(m.description)}</p>
+        <p class="text-sm text-[#3F4D63] leading-relaxed font-light">${this.escapeHtml(m.description)}</p>
 
         <div class="space-y-1.5 pt-2">
-          <div class="font-mono text-[11px] text-[#82858F] uppercase tracking-wider">Verifiable Acceptance Criteria:</div>
-          <ul class="space-y-1 text-xs text-[#111215]">
+          <div class="font-mono text-[11px] text-[#62718A] uppercase tracking-wider">Verifiable Acceptance Criteria:</div>
+          <ul class="space-y-1 text-xs text-[#0C1A30]">
             ${(m.acceptance_criteria || []).map(crit => `
               <li class="flex items-center space-x-2">
-                <span class="text-[#14532D] font-mono">✓</span>
+                <svg class="w-3.5 h-3.5 inline text-[#0D6832]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                 <span>${this.escapeHtml(crit.description)}</span>
-                <span class="font-mono text-[10px] text-[#82858F] uppercase px-1.5 py-0.5 bg-[#F3F1EC] rounded-[2px]">[${crit.verification_method}]</span>
+                <span class="font-mono text-[10px] text-[#62718A] uppercase px-1.5 py-0.5 bg-[#F0F4F9] rounded-[2px]">[${crit.verification_method}]</span>
               </li>
             `).join('')}
           </ul>
@@ -1279,12 +1296,23 @@ const TrustBridgeApp = {
   // CONTRACT DETAIL
   // ---------------------------------------------------------------------------
   async loadContractDetail(contractId) {
+    const emptyEl = document.getElementById('contract-detail-empty');
+    const contentEl = document.getElementById('contract-detail-content');
+    if (!contractId) {
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      if (contentEl) contentEl.classList.add('hidden');
+      return;
+    }
     try {
       const contract = await this.apiRequest(`/contracts/${contractId}`);
       this.state.activeContract = contract;
+      if (emptyEl) emptyEl.classList.add('hidden');
+      if (contentEl) contentEl.classList.remove('hidden');
       this.renderContractDetail(contract);
     } catch (e) {
       this.showToast(`Could not load contract: ${e.message}`, 'error');
+      if (emptyEl) emptyEl.classList.remove('hidden');
+      if (contentEl) contentEl.classList.add('hidden');
     }
   },
 
@@ -1321,7 +1349,8 @@ const TrustBridgeApp = {
     // Calm Custody Summary Notice
     const custodySummary = document.getElementById('detail-custody-summary');
     if (custodySummary) {
-      custodySummary.textContent = `Funds ($${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}) are held in PayPal dual-custody escrow vault order #${c.paypal_order_id || 'ORDER-SANDBOX-DEMO-991'}. Neither party can withdraw unilaterally. Payout executes only upon cryptographic pass of acceptance criteria.`;
+      const vaultDesc = c.paypal_order_id ? `vault order #${c.paypal_order_id}` : `contract ${c.id}`;
+      custodySummary.textContent = `Funds ($${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}) are held in PayPal dual-custody escrow ${vaultDesc}. Neither party can withdraw unilaterally. Payout executes only upon cryptographic pass of acceptance criteria.`;
     }
 
     // Action bar buttons
@@ -1366,23 +1395,23 @@ const TrustBridgeApp = {
         <div class="p-8 space-y-5 bg-[#FFFFFF]">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 hairline-b pb-4">
             <div class="flex items-center space-x-3">
-              <span class="w-7 h-7 rounded-[2px] bg-[#111215] text-[#FFFFFF] font-mono text-xs flex items-center justify-center font-bold">
+              <span class="w-7 h-7 rounded-[2px] bg-[#003087] text-[#FFFFFF] font-mono text-xs flex items-center justify-center font-bold">
                 0${m.order_index}
               </span>
               <div>
-                <div class="font-mono text-[10px] text-[#82858F] uppercase tracking-wider">EXHIBIT 0${m.order_index}</div>
-                <span class="font-serif font-medium text-lg text-[#111215]">${this.escapeHtml(m.title)}</span>
+                <div class="font-mono text-[10px] text-[#62718A] uppercase tracking-wider">EXHIBIT 0${m.order_index}</div>
+                <span class="font-serif font-medium text-lg text-[#0C1A30]">${this.escapeHtml(m.title)}</span>
               </div>
             </div>
             <div class="flex items-center space-x-3">
               <span class="badge ${mBadgeClass}">${m.status}</span>
-              <div class="font-mono text-sm font-semibold text-[#111215]">
-                $${m.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} <span class="text-xs text-[#82858F] font-normal">(${payoutAmt})</span>
+              <div class="font-mono text-sm font-semibold text-[#0C1A30]">
+                $${m.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} <span class="text-xs text-[#62718A] font-normal">(${payoutAmt})</span>
               </div>
             </div>
           </div>
 
-          <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(m.description)}</p>
+          <p class="text-sm text-[#3F4D63] leading-relaxed font-light">${this.escapeHtml(m.description)}</p>
 
           <!-- LIVING WAITING STATUS (Lenny) -->
           <div class="living-badge w-full">
@@ -1392,13 +1421,13 @@ const TrustBridgeApp = {
 
           <!-- ACCEPTANCE CRITERIA FORENSIC AUDIT SPEC -->
           <div class="space-y-2 pt-1">
-            <div class="font-mono text-[11px] text-[#82858F] uppercase tracking-wider">Forensic Acceptance Criteria:</div>
-            <ul class="space-y-1.5 text-xs text-[#111215]">
+            <div class="font-mono text-[11px] text-[#62718A] uppercase tracking-wider">Forensic Acceptance Criteria:</div>
+            <ul class="space-y-1.5 text-xs text-[#0C1A30]">
               ${(m.acceptance_criteria || []).map(crit => `
                 <li class="flex items-center space-x-2">
-                  <span class="text-[#14532D] font-mono">✓</span>
+                  <svg class="w-3.5 h-3.5 inline text-[#0D6832]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                   <span>${this.escapeHtml(crit.description)}</span>
-                  <span class="font-mono text-[10px] text-[#82858F] uppercase px-1.5 py-0.5 bg-[#F3F1EC] rounded-[2px]">[${crit.verification_method}]</span>
+                  <span class="font-mono text-[10px] text-[#62718A] uppercase px-1.5 py-0.5 bg-[#F0F4F9] rounded-[2px]">[${crit.verification_method}]</span>
                 </li>
               `).join('')}
             </ul>
@@ -1406,15 +1435,15 @@ const TrustBridgeApp = {
 
           <!-- SUBMITTED EVIDENCE EXHIBIT (IF ANY) -->
           ${m.evidence_url ? `
-            <div class="hairline-all p-5 bg-[#F9F8F6] space-y-2.5 text-xs rounded-[2px]">
+            <div class="hairline-all p-5 bg-[#F0F7FC] space-y-2.5 text-xs rounded-[2px]">
               <div class="flex items-center justify-between">
-                <span class="font-mono text-[#82858F] uppercase text-[10px] tracking-wider">EXHIBIT ARTIFACT DOSSIER</span>
-                <span class="font-mono text-[#14532D] font-semibold bg-[#F0FDF4] px-2 py-0.5 rounded-[2px] border border-[#BBF7D0]">CRYPTOGRAPHIC VERIFICATION SCORE: ${((m.verification_score || 1.0) * 100).toFixed(0)}%</span>
+                <span class="font-mono text-[#62718A] uppercase text-[10px] tracking-wider">EXHIBIT ARTIFACT DOSSIER</span>
+                <span class="font-mono text-[#0D6832] font-semibold bg-[#F0FDF4] px-2 py-0.5 rounded-[2px] border border-[#BBF7D0]">CRYPTOGRAPHIC VERIFICATION SCORE: ${((m.verification_score || 1.0) * 100).toFixed(0)}%</span>
               </div>
-              <div class="font-mono text-[#111215] break-all">
-                PR / Artifact: <a href="${m.evidence_url}" target="_blank" class="text-[#C2410C] underline hover:text-[#9A3412]">${m.evidence_url}</a>
+              <div class="font-mono text-[#0C1A30] break-all">
+                PR / Artifact: <a href="${m.evidence_url}" target="_blank" class="text-[#0079C1] underline hover:text-[#9A3412]">${m.evidence_url}</a>
               </div>
-              ${m.evidence_notes ? `<div class="text-[#4A4D55] text-xs">${this.escapeHtml(m.evidence_notes)}</div>` : ''}
+              ${m.evidence_notes ? `<div class="text-[#3F4D63] text-xs">${this.escapeHtml(m.evidence_notes)}</div>` : ''}
               ${m.paypal_payout_batch_id ? `
                 <div class="font-mono text-[#6B21A8] text-[11px] pt-1">
                   PAYPAL PAYOUT BATCH: ${m.paypal_payout_batch_id} (Captured)
@@ -1441,21 +1470,21 @@ const TrustBridgeApp = {
               ` : ''}
 
               ${m.status === 'VERIFIED' ? `
-                <button onclick="TrustBridgeApp.releaseMilestone('${m.id}')" class="btn-primary text-xs bg-[#14532D] border-[#14532D] hover:bg-[#0F3D20]">
+                <button onclick="TrustBridgeApp.releaseMilestone('${m.id}')" class="btn-primary text-xs bg-[#0D6832] border-[#0D6832] hover:bg-[#0F3D20]">
                   <span>Approve & Release Funds</span>
                   <span>→</span>
                 </button>
               ` : ''}
 
               ${(m.status !== 'RELEASED' && m.status !== 'DISPUTED') ? `
-                <button onclick="TrustBridgeApp.triggerDisputeFlow('${m.id}')" class="btn-subtle text-xs text-[#991B1B] hover:bg-[#FEF2F2]">
+                <button onclick="TrustBridgeApp.triggerDisputeFlow('${m.id}')" class="btn-subtle text-xs text-[#C81E1E] hover:bg-[#FEF2F2]">
                   <span>Raise Dispute</span>
                 </button>
               ` : ''}
             </div>
 
             <!-- JOHN ZIMMER RECEIPT TRIGGER -->
-            <button onclick="TrustBridgeApp.openReceiptModal('ms_demo_${m.order_index}')" class="font-mono text-xs text-[#82858F] hover:text-[#C2410C] transition flex items-center space-x-1">
+            <button onclick="TrustBridgeApp.openReceiptModal('${c.id}')" class="font-mono text-xs text-[#62718A] hover:text-[#0079C1] transition flex items-center space-x-1">
               <span>View Milestone Receipt</span>
               <span>↗</span>
             </button>
@@ -1469,37 +1498,32 @@ const TrustBridgeApp = {
     if (c.audit_logs && c.audit_logs.length > 0) {
       auditTbody.innerHTML = c.audit_logs.map(log => `
         <tr>
-          <td class="font-mono text-xs text-[#82858F]">${new Date(log.created_at).toLocaleString()}</td>
-          <td class="font-mono text-xs font-medium text-[#111215]">${this.escapeHtml(log.actor_role)}</td>
+          <td class="font-mono text-xs text-[#62718A]">${new Date(log.created_at).toLocaleString()}</td>
+          <td class="font-mono text-xs font-medium text-[#0C1A30]">${this.escapeHtml(log.actor_role)}</td>
           <td><span class="badge badge-draft">${this.escapeHtml(log.action)}</span></td>
-          <td class="text-xs text-[#4A4D55] font-light">${this.escapeHtml(log.description)}</td>
+          <td class="text-xs text-[#3F4D63] font-light">${this.escapeHtml(log.description)}</td>
         </tr>
       `).join('');
     } else {
-      auditTbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-[#82858F] font-mono text-xs">No audit events recorded</td></tr>`;
+      auditTbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-[#62718A] font-mono text-xs">No audit events recorded</td></tr>`;
     }
   },
 
   selectPhysicalStage(stageNum) {
+    const c = this.state.activeContract;
+    if (!c) return;
+
     for (let i = 1; i <= 5; i++) {
       const card = document.getElementById(`stage-card-${i}`);
       if (card) {
-        if (i === stageNum) card.classList.add('stage-selected');
-        else card.classList.remove('stage-selected');
+        if (i === stageNum) {
+          card.classList.add('stage-selected');
+        } else {
+          card.classList.remove('stage-selected');
+        }
       }
     }
 
-    const c = this.state.activeContract || {
-      id: 'ct_mobile_demo_1',
-      total_amount: 3500,
-      base_currency: 'USD',
-      payout_currency: 'INR',
-      locked_fx_rate: 84.50,
-      client_name: 'Sarah Vance',
-      developer_name: 'Rahul Sharma',
-      paypal_order_id: 'ORDER-SANDBOX-DEMO-991',
-      funded_at: '2026-10-19T18:04:12Z',
-    };
     const rate = c.locked_fx_rate || 84.50;
     const payoutTotal = (c.total_amount * rate).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
@@ -1512,63 +1536,69 @@ const TrustBridgeApp = {
 
     if (stageNum === 1) {
       if (titleEl) titleEl.textContent = 'Stage 01: Escrow Deposit Authorized';
-      if (vaultEl) vaultEl.textContent = `PayPal Sandbox Vault Order #${c.paypal_order_id || 'ORDER-SANDBOX-DEMO-991'}`;
+      if (vaultEl) vaultEl.textContent = c.paypal_order_id ? `PayPal Sandbox Vault Order #${c.paypal_order_id}` : `Dual-Custody Vault (${c.id})`;
       if (amountEl) amountEl.textContent = `$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} (Hedged to ${c.payout_currency} ${payoutTotal} @ ${rate.toFixed(2)})`;
-      if (timeEl) timeEl.textContent = `${c.funded_at ? new Date(c.funded_at).toUTCString() : '2026-10-19 18:04:12 UTC'} • HMAC-SHA256 Signed`;
-      if (actorEl) actorEl.textContent = `${c.client_name} (Client) via PayPal Sandbox Vault Authorization`;
+      if (timeEl) timeEl.textContent = `${c.funded_at ? new Date(c.funded_at).toUTCString() : (c.created_at ? new Date(c.created_at).toUTCString() : 'Active')} • HMAC-SHA256 Signed`;
+      if (actorEl) actorEl.textContent = `${c.client_name || 'Client'} via PayPal Sandbox Vault Authorization`;
       if (statusEl) {
         statusEl.textContent = 'Irrevocable Dual-Custody Lock (Neither party can unilateral sweep)';
-        statusEl.className = 'font-medium text-[#14532D]';
+        statusEl.className = 'font-medium text-[#0D6832]';
       }
     } else if (stageNum === 2) {
       if (titleEl) titleEl.textContent = 'Stage 02: Dual-Custody Vault Holding';
-      if (vaultEl) vaultEl.textContent = `PayPal Dual-Custody Multi-Sig Vault (${c.paypal_order_id || 'ORDER-SANDBOX-DEMO-991'})`;
+      if (vaultEl) vaultEl.textContent = c.paypal_order_id ? `PayPal Dual-Custody Multi-Sig Vault (${c.paypal_order_id})` : `PayPal Escrow Vault Reserve (${c.id})`;
       if (amountEl) amountEl.textContent = `$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} Held in Dual-Custody`;
       if (timeEl) timeEl.textContent = `Active Continuous Hold • Audited by SQLite WAL`;
       if (actorEl) actorEl.textContent = 'TrustBridge Protocol Autonomous Custodian';
       if (statusEl) {
         statusEl.textContent = 'Active Dual-Custody Vault (Release governed by cryptographic verification gates)';
-        statusEl.className = 'font-medium text-[#14532D]';
+        statusEl.className = 'font-medium text-[#0D6832]';
       }
     } else if (stageNum === 3) {
       if (titleEl) titleEl.textContent = 'Stage 03: Deliverable & Test Verification';
-      if (vaultEl) vaultEl.textContent = 'GitHub PR Diffs + Pytest Automated Evaluation Engine';
-      if (amountEl) amountEl.textContent = `Milestone 1 Verified ($1,000.00 USD), Milestone 2 In-Review`;
-      if (timeEl) timeEl.textContent = '2026-10-19 19:22:04 UTC • Webhook HMAC Validated';
-      if (actorEl) actorEl.textContent = 'AI_ENGINE_V1 + Deterministic CI Runner';
+      if (vaultEl) vaultEl.textContent = 'GitHub PR Diffs + Automated Pytest Evaluation Engine';
+      if (amountEl) amountEl.textContent = `$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} Gated by Acceptance Criteria`;
+      if (timeEl) timeEl.textContent = 'Autonomous Webhook Triggered Evaluation';
+      if (actorEl) actorEl.textContent = 'TrustBridge Continuous Verification Engine';
       if (statusEl) {
-        statusEl.textContent = 'Verified Score: 0.98 (All acceptance criteria pass)';
-        statusEl.className = 'font-medium text-[#14532D]';
+        statusEl.textContent = 'Evaluator Armed (Pass score >= 0.85 unlocks release)';
+        statusEl.className = 'font-medium text-[#0079C1]';
       }
     } else if (stageNum === 4) {
-      if (titleEl) titleEl.textContent = 'Stage 04: Programmatic Release & FX Conversion';
-      if (vaultEl) vaultEl.textContent = 'PayPal Sandbox Payout Batch Dispatcher';
-      if (amountEl) amountEl.textContent = `₹84,500.00 INR Settled to Developer (0.0% Slippage)`;
-      if (timeEl) timeEl.textContent = '2026-10-19 19:23:00 UTC';
-      if (actorEl) actorEl.textContent = 'TrustBridge Atomic Settlement Rail';
+      if (titleEl) titleEl.textContent = 'Stage 04: Programmatic Release & FX Settlement';
+      if (vaultEl) vaultEl.textContent = 'PayPal Dual-Custody Payout Rail';
+      if (amountEl) amountEl.textContent = `${c.payout_currency} ${payoutTotal} Guaranteed Payout (${c.fx_strategy} @ ${rate.toFixed(2)})`;
+      if (timeEl) timeEl.textContent = 'Atomic Cryptographic Release Upon Verification';
+      if (actorEl) actorEl.textContent = 'Autonomous Multi-Sig Settlement Agent';
       if (statusEl) {
-        statusEl.textContent = 'Atomic Settlement Completed (Hedged FX payout locked)';
-        statusEl.className = 'font-medium text-[#14532D]';
+        statusEl.textContent = '0.0% Slippage Payout Execution Guarantee';
+        statusEl.className = 'font-medium text-[#0D6832]';
       }
     } else if (stageNum === 5) {
-      if (titleEl) titleEl.textContent = 'Stage 05: Mediation & Dispute Safeguard';
-      if (vaultEl) vaultEl.textContent = 'Automatic Vault Freeze Guard';
-      if (amountEl) amountEl.textContent = '100% of Escrow Funds Safe & Protected';
-      if (timeEl) timeEl.textContent = 'Standby (Active on mediation request)';
-      if (actorEl) actorEl.textContent = 'Bilateral Dispute Arbitration Policy';
+      if (titleEl) titleEl.textContent = 'Stage 05: Safe Mediation Safeguard';
+      if (vaultEl) vaultEl.textContent = 'Immediate Escrow Vault Freeze Safeguard';
+      if (amountEl) amountEl.textContent = `$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} Frozen (Zero Unauthorized Liquidations)`;
+      if (timeEl) timeEl.textContent = '72-Hour Evidence Review Window Activated Upon Claim';
+      if (actorEl) actorEl.textContent = 'Bilateral Dispute Mediation Protocol';
       if (statusEl) {
-        statusEl.textContent = 'Instant Freeze Safeguard Enabled (72h evidence resolution window)';
-        statusEl.className = 'font-medium text-[#C2410C]';
+        statusEl.textContent = 'Standby Protection: Neither party can sweep funds in dispute';
+        statusEl.className = 'font-medium text-[#0079C1]';
       }
     }
   },
 
-  // ---------------------------------------------------------------------------
-  // ANXIETY & TRUST MODALS (Zhuo, Yubi, Soleio, Rachitsky, Zimmer)
-  // ---------------------------------------------------------------------------
   openCustodyAssuranceModal() {
     const modal = document.getElementById('modal-custody-assurance');
-    if (modal) modal.classList.remove('hidden');
+    if (modal) {
+      const c = this.state.activeContract || (this.state.contracts && this.state.contracts[0]);
+      const camVault = document.getElementById('cam-vault-id');
+      if (camVault) {
+        camVault.textContent = (c && c.paypal_order_id)
+          ? `PayPal Orders Vault #${c.paypal_order_id}`
+          : (c ? `PayPal Escrow Vault Reserve (${c.id})` : 'PayPal Dual-Custody Multi-Sig Vault (Active Sandbox)');
+      }
+      modal.classList.remove('hidden');
+    }
   },
 
   closeCustodyAssuranceModal() {
@@ -1577,11 +1607,11 @@ const TrustBridgeApp = {
   },
 
   openDisputeGuideModal() {
-    this.openCustodyAssuranceModal();
+    const modal = document.getElementById('modal-dispute-mediation');
+    if (modal) modal.classList.remove('hidden');
   },
 
   triggerDisputeFlow(milestoneId = null) {
-    this.state.disputingMilestoneId = milestoneId;
     const modal = document.getElementById('modal-dispute-mediation');
     if (modal) modal.classList.remove('hidden');
   },
@@ -1592,62 +1622,54 @@ const TrustBridgeApp = {
   },
 
   async submitDisputeConfirmed() {
-    const reason = document.getElementById('dispute-modal-reason')?.value || 'Scope deliverable verification review';
-    const milestoneId = this.state.disputingMilestoneId || (this.state.activeContract?.milestones?.[0]?.id);
-    this.closeDisputeModal();
-
-    if (!milestoneId) {
-      this.showToast('Mediation safeguard activated: Dual-custody vault frozen.', 'info');
+    const c = this.state.activeContract;
+    if (!c) {
+      this.closeDisputeModal();
       return;
     }
-
+    const reason = document.getElementById('dispute-reason-input')?.value || 'Milestone deliverable did not satisfy agreed cryptographic criteria.';
     try {
-      await this.apiRequest(`/milestones/${milestoneId}/dispute`, 'POST', {
-        reason: reason,
-        evidence_notes: 'Mediation safeguard triggered through safe protocol console.',
-      });
-      this.showToast('Mediation activated. The escrow vault is safely frozen and protected while evidence is reviewed.', 'warning');
-      this.fetchNotifications();
-      if (this.state.activeContract) {
-        this.loadContractDetail(this.state.activeContract.id);
-      }
+      await this.apiRequest(`/contracts/${c.id}/dispute`, 'POST', { reason });
+      this.showToast('Safe mediation activated. Escrow disbursements paused for 72 hours.', 'warning');
+      this.closeDisputeModal();
+      this.loadContractDetail(c.id);
     } catch (e) {
       this.showToast(`Mediation notice: ${e.message}`, 'error');
     }
   },
 
-  openReceiptModal(receiptId = 'rcpt_demo_01') {
-    const c = this.state.activeContract || {
-      id: 'ct_mobile_demo_1',
-      total_amount: 3500,
-      base_currency: 'USD',
-      payout_currency: 'INR',
-      locked_fx_rate: 84.50,
-      client_name: 'Sarah Vance',
-      client_country: 'US',
-      developer_name: 'Rahul Sharma',
-      developer_country: 'IN',
-      paypal_order_id: 'ORDER-SANDBOX-DEMO-991',
-    };
+  openReceiptModal(receiptId = null) {
+    let c = this.state.activeContract;
+    if (receiptId && this.state.contracts && this.state.contracts.length > 0) {
+      const match = this.state.contracts.find(x => x.id === receiptId);
+      if (match) c = match;
+    }
+    if (!c && this.state.contracts && this.state.contracts.length > 0) {
+      c = this.state.contracts[0];
+    }
     const modal = document.getElementById('modal-receipt');
     if (!modal) return;
+    if (!c) {
+      this.showToast('No active escrow contract selected for receipt view.', 'info');
+      return;
+    }
 
     const rate = c.locked_fx_rate || 84.50;
-    const amountVal = (receiptId && String(receiptId).includes('ms_')) ? 1000 : c.total_amount;
+    const amountVal = c.total_amount || 0;
     const inrVal = (amountVal * rate).toLocaleString('en-US', { maximumFractionDigits: 2 });
 
     const rcptAmount = document.getElementById('rcpt-amount');
     if (rcptAmount) rcptAmount.textContent = `$${amountVal.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}`;
     const rcptFx = document.getElementById('rcpt-payout-fx');
-    if (rcptFx) rcptFx.textContent = `₹${inrVal} ${c.payout_currency} @ ${rate.toFixed(2)} LOCKED FX`;
+    if (rcptFx) rcptFx.textContent = `${c.payout_currency} ${inrVal} @ ${rate.toFixed(2)} LOCKED FX`;
     const rcptNum = document.getElementById('rcpt-number');
-    if (rcptNum) rcptNum.textContent = `TB-RCPT-${Date.now().toString().slice(-6)}`;
+    if (rcptNum) rcptNum.textContent = `TB-RCPT-${c.id ? c.id.slice(-8).toUpperCase() : Date.now().toString().slice(-8)}`;
     const rcptVault = document.getElementById('rcpt-vault');
-    if (rcptVault) rcptVault.textContent = c.paypal_order_id || 'ORDER-SANDBOX-DEMO-991';
+    if (rcptVault) rcptVault.textContent = c.paypal_order_id ? `PayPal Vault Order #${c.paypal_order_id}` : `ESCROW-VAULT-${c.id}`;
     const rcptClient = document.getElementById('rcpt-client');
-    if (rcptClient) rcptClient.textContent = `${c.client_name} (${c.client_country || 'US'})`;
+    if (rcptClient) rcptClient.textContent = `${c.client_name || 'Client'} (${c.client_country || 'US'})`;
     const rcptDev = document.getElementById('rcpt-developer');
-    if (rcptDev) rcptDev.textContent = `${c.developer_name} (${c.developer_country || 'IN'})`;
+    if (rcptDev) rcptDev.textContent = `${c.developer_name || 'Developer'} (${c.developer_country || 'IN'})`;
 
     modal.classList.remove('hidden');
   },
@@ -1655,28 +1677,6 @@ const TrustBridgeApp = {
   closeReceiptModal() {
     const modal = document.getElementById('modal-receipt');
     if (modal) modal.classList.add('hidden');
-  },
-
-  async fundContractWithPayPal(contractId, amount) {
-    try {
-      this.showToast('Creating PayPal sandbox order...', 'info');
-      const orderRes = await this.apiRequest('/paypal/order/create', 'POST', {
-        contract_id: contractId,
-        amount: amount,
-      });
-
-      const orderId = orderRes.order_id;
-      this.showToast(`Order created: ${orderId}. Locking escrow funds...`, 'info');
-
-      await this.apiRequest(`/contracts/${contractId}/fund`, 'POST', {
-        paypal_order_id: orderId,
-      });
-
-      this.showToast('Escrow vault funded! Contract is now ACTIVE.', 'success');
-      this.loadContractDetail(contractId);
-    } catch (e) {
-      this.showToast(`Funding failed: ${e.message}`, 'error');
-    }
   },
 
   openSubmitModal(milestoneId) {

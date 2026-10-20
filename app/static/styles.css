@@ -1,25 +1,39 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..700&family=JetBrains+Mono:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bg-canvas: #F9F8F6;
-  --bg-surface: #FFFFFF;
-  --bg-subtle: #F3F1EC;
-  --bg-subtle-hover: #ECEAE4;
-  
-  --border-hairline: #E2DFD8;
-  --border-hairline-dark: #C8C4B9;
-  --border-focus: #111215;
-  
-  --text-primary: #111215;
-  --text-secondary: #4A4D55;
-  --text-muted: #82858F;
-  
-  --color-accent: #C2410C;
-  --color-accent-hover: #9A3412;
-  --color-accent-subtle: #FFF7ED;
-  --color-accent-border: #FDBA74;
+  /* --------------------------------------------------------------------------
+     RasoTrustBridge v4: PayPal-Inspired Theme System
+     Deep PayPal Blue (#003087), Bright Blue (#0079C1), Clean White Surfaces,
+     Generous Whitespace, Rounded-Friendly Fintech Feel, Institutional Trust.
+     -------------------------------------------------------------------------- */
+  --color-paypal-deep: #003087;
+  --color-paypal-deep-hover: #002060;
+  --color-paypal-bright: #0079C1;
+  --color-paypal-bright-hover: #005C9E;
+  --color-paypal-subtle: #F0F7FC;
+  --color-paypal-subtle-hover: #E5F2FB;
+  --color-paypal-border: #BAE0F8;
 
-  --color-settled: #14532D;
+  --bg-canvas: #F5F7FA;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #F0F4F9;
+  --bg-subtle-hover: #E4ECF5;
+  
+  --border-hairline: #E1E7EE;
+  --border-hairline-dark: #CBD5E1;
+  --border-focus: #0079C1;
+  
+  --text-primary: #0C1A30;
+  --text-secondary: #3F4D63;
+  --text-muted: #62718A;
+  
+  --color-accent: #0079C1;
+  --color-accent-hover: #005C9E;
+  --color-accent-subtle: #F0F7FC;
+  --color-accent-border: #BAE0F8;
+
+  --color-settled: #0D6832;
+  --color-settled-hover: #0A5328;
   --color-settled-subtle: #F0FDF4;
   --color-settled-border: #BBF7D0;
 
@@ -27,9 +41,19 @@
   --color-warning-subtle: #FFFBEB;
   --color-warning-border: #FDE68A;
 
-  --color-danger: #991B1B;
+  --color-danger: #C81E1E;
   --color-danger-subtle: #FEF2F2;
   --color-danger-border: #FECACA;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-pill: 9999px;
+
+  --shadow-card: 0 1px 3px rgba(12, 26, 48, 0.04), 0 6px 18px -4px rgba(0, 48, 135, 0.05);
+  --shadow-dropdown: 0 10px 28px -4px rgba(0, 48, 135, 0.12), 0 2px 6px -1px rgba(0, 0, 0, 0.04);
+  --shadow-modal: 0 20px 40px -8px rgba(0, 48, 135, 0.2), 0 4px 12px -2px rgba(0, 0, 0, 0.06);
 
   --font-serif: 'Fraunces', Georgia, serif;
   --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -86,7 +110,7 @@ body {
 h1, .h1 {
   font-family: var(--font-serif);
   font-size: 2.75rem;
-  line-height: 1.12;
+  line-height: 1.15;
   letter-spacing: -0.035em;
   font-weight: 500;
   color: var(--text-primary);
@@ -110,34 +134,39 @@ h3, .h3 {
   color: var(--text-primary);
 }
 
-/* Minimalist Button System (hairlines + high contrast) */
+/* --------------------------------------------------------------------------
+   PayPal-Inspired Button System (Pill-Rounded, Fintech Trust, High Contrast)
+   -------------------------------------------------------------------------- */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background-color: #111215;
+  background-color: var(--color-paypal-deep);
   color: #FFFFFF;
-  border: 1px solid #111215;
-  padding: 0.55rem 1.25rem;
+  border: 1px solid var(--color-paypal-deep);
+  padding: 0.55rem 1.4rem;
   font-size: 0.8125rem;
-  font-weight: 500;
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
-  border-radius: 2px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 48, 135, 0.15);
 }
 .btn-primary:hover {
-  background-color: #272930;
-  border-color: #272930;
+  background-color: var(--color-paypal-deep-hover);
+  border-color: var(--color-paypal-deep-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 48, 135, 0.28);
 }
 .btn-primary:disabled {
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+  box-shadow: none;
 }
 
 .btn-accent {
@@ -145,23 +174,25 @@ h3, .h3 {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  background-color: var(--color-accent);
+  background-color: var(--color-paypal-bright);
   color: #FFFFFF;
-  border: 1px solid var(--color-accent);
-  padding: 0.55rem 1.25rem;
+  border: 1px solid var(--color-paypal-bright);
+  padding: 0.55rem 1.4rem;
   font-size: 0.8125rem;
-  font-weight: 500;
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
-  border-radius: 2px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
+  box-shadow: 0 1px 3px rgba(0, 121, 193, 0.2);
 }
 .btn-accent:hover {
-  background-color: var(--color-accent-hover);
-  border-color: var(--color-accent-hover);
+  background-color: var(--color-paypal-bright-hover);
+  border-color: var(--color-paypal-bright-hover);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px -2px rgba(0, 121, 193, 0.32);
 }
 
 .btn-secondary {
@@ -170,20 +201,22 @@ h3, .h3 {
   justify-content: center;
   gap: 0.5rem;
   background-color: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border-hairline);
-  padding: 0.55rem 1.25rem;
+  color: var(--color-paypal-deep);
+  border: 1px solid var(--border-hairline-dark);
+  padding: 0.55rem 1.35rem;
   font-size: 0.8125rem;
-  font-weight: 500;
-  font-family: var(--font-mono);
-  border-radius: 2px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
 }
 .btn-secondary:hover {
-  background-color: var(--bg-subtle);
-  border-color: var(--border-hairline-dark);
+  background-color: var(--color-paypal-subtle);
+  border-color: var(--color-paypal-bright);
+  color: var(--color-paypal-bright);
+  transform: translateY(-1px);
 }
 
 .btn-subtle {
@@ -194,43 +227,47 @@ h3, .h3 {
   background: transparent;
   color: var(--text-secondary);
   border: 1px solid transparent;
-  padding: 0.45rem 0.85rem;
+  padding: 0.45rem 1rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  font-family: var(--font-mono);
-  border-radius: 2px;
+  font-family: var(--font-sans);
+  border-radius: var(--radius-pill);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   text-decoration: none;
 }
 .btn-subtle:hover {
-  color: var(--text-primary);
-  background-color: var(--bg-subtle);
-  border-color: var(--border-hairline);
+  color: var(--color-paypal-deep);
+  background-color: var(--color-paypal-subtle);
+  border-color: var(--color-paypal-border);
 }
 
-/* Minimalist Form Controls */
+/* --------------------------------------------------------------------------
+   Rounded-Friendly Form Controls
+   -------------------------------------------------------------------------- */
 .form-input, .form-textarea, .form-select {
   width: 100%;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-hairline);
-  border-radius: 2px;
-  padding: 0.65rem 0.875rem;
+  border-radius: var(--radius-md);
+  padding: 0.65rem 0.95rem;
   font-size: 0.875rem;
   color: var(--text-primary);
   font-family: var(--font-sans);
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 .form-input:focus, .form-textarea:focus, .form-select:focus {
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 1px var(--border-focus);
+  border-color: var(--color-paypal-bright);
+  box-shadow: 0 0 0 3px rgba(0, 121, 193, 0.15);
 }
 .form-input::placeholder, .form-textarea::placeholder {
   color: var(--text-muted);
 }
 
-/* Restrained Status Badges */
+/* --------------------------------------------------------------------------
+   Restrained Status Badges (Pills)
+   -------------------------------------------------------------------------- */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -238,10 +275,10 @@ h3, .h3 {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
   font-weight: 600;
-  padding: 0.2rem 0.55rem;
-  border-radius: 2px;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius-pill);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
 }
 .badge-draft {
   background-color: var(--bg-subtle);
@@ -249,9 +286,9 @@ h3, .h3 {
   border: 1px solid var(--border-hairline);
 }
 .badge-active {
-  background-color: var(--color-accent-subtle);
-  color: var(--color-accent);
-  border: 1px solid var(--color-accent-border);
+  background-color: var(--color-paypal-subtle);
+  color: var(--color-paypal-deep);
+  border: 1px solid var(--color-paypal-border);
 }
 .badge-verified {
   background-color: var(--color-settled-subtle);
@@ -259,9 +296,9 @@ h3, .h3 {
   border: 1px solid var(--color-settled-border);
 }
 .badge-released {
-  background-color: #FAF5FF;
-  color: #6B21A8;
-  border: 1px solid #E9D5FF;
+  background-color: #F8FAFC;
+  color: #0F172A;
+  border: 1px solid #CBD5E1;
 }
 .badge-disputed {
   background-color: var(--color-warning-subtle);
@@ -269,14 +306,16 @@ h3, .h3 {
   border: 1px solid var(--color-warning-border);
 }
 
-/* Architectural Data Table */
+/* --------------------------------------------------------------------------
+   Architectural Data Table
+   -------------------------------------------------------------------------- */
 .data-table {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
 }
 .data-table th {
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.15rem;
   font-size: 0.6875rem;
   font-family: var(--font-mono);
   font-weight: 600;
@@ -284,23 +323,26 @@ h3, .h3 {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   border-bottom: 1px solid var(--border-hairline);
-  background-color: var(--bg-subtle);
+  background-color: #F8FAFD;
 }
 .data-table td {
-  padding: 1rem;
+  padding: 1.1rem;
   font-size: 0.85rem;
   border-bottom: 1px solid var(--border-hairline);
   color: var(--text-primary);
   background-color: var(--bg-surface);
 }
 .data-table tr:hover td {
-  background-color: #FCFBF9;
+  background-color: #F8FBFE;
 }
 
-/* Animated Escrow Flow Sequence */
+/* --------------------------------------------------------------------------
+   Animated Escrow Flow Sequence (PayPal Blue Pulse)
+   -------------------------------------------------------------------------- */
 .escrow-flow-container {
   position: relative;
   overflow: hidden;
+  border-radius: var(--radius-lg);
 }
 
 .flow-step-node {
@@ -309,34 +351,34 @@ h3, .h3 {
 }
 .flow-step-node.active-step {
   background-color: #FFFFFF;
-  box-shadow: 0 4px 20px -2px rgba(17, 18, 21, 0.06);
+  box-shadow: 0 6px 20px -3px rgba(0, 48, 135, 0.08);
 }
 .flow-step-node.active-step .flow-step-num {
-  background-color: var(--color-accent);
+  background-color: var(--color-paypal-deep);
   color: #FFFFFF;
 }
 
 .flow-pulse-indicator {
   display: inline-block;
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
-  background-color: var(--color-accent);
-  animation: pulse-ring 1.8s infinite;
+  background-color: var(--color-paypal-bright);
+  animation: pulse-ring 2s infinite;
 }
 
 @keyframes pulse-ring {
   0% {
     transform: scale(0.9);
-    box-shadow: 0 0 0 0 rgba(194, 65, 12, 0.7);
+    box-shadow: 0 0 0 0 rgba(0, 121, 193, 0.7);
   }
   70% {
     transform: scale(1);
-    box-shadow: 0 0 0 6px rgba(194, 65, 12, 0);
+    box-shadow: 0 0 0 7px rgba(0, 121, 193, 0);
   }
   100% {
     transform: scale(0.9);
-    box-shadow: 0 0 0 0 rgba(194, 65, 12, 0);
+    box-shadow: 0 0 0 0 rgba(0, 121, 193, 0);
   }
 }
 
@@ -379,35 +421,6 @@ h3, .h3 {
   }
 }
 
-/* Interactive Bounds Visualizer */
-.bounds-track {
-  height: 6px;
-  border-radius: 3px;
-  background: #E5E3DD;
-  position: relative;
-}
-.bounds-range {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  background: #111215;
-  border-radius: 3px;
-}
-.bounds-marker {
-  position: absolute;
-  top: -4px;
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #FFFFFF;
-  border: 2px solid #111215;
-  transform: translateX(-50%);
-}
-.bounds-marker.agreed {
-  border-color: var(--color-accent);
-  background: var(--color-accent);
-}
-
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
@@ -418,22 +431,22 @@ h3, .h3 {
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-hairline-dark);
-  border-radius: 2px;
+  border-radius: var(--radius-pill);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
+  background: #94A3B8;
 }
 
 /* --------------------------------------------------------------------------
-   UI V3 MENTOR-DRIVEN REFINEMENTS (Yubi, Zhuo, Soleio, Rachitsky, Zimmer)
+   UI V3/V4 MENTOR-DRIVEN REFINEMENTS (PayPal Re-theme & Declutter)
    -------------------------------------------------------------------------- */
 
 /* 1. Deal Formation Term Objects & Snap Physics */
 .term-object {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-hairline);
-  padding: 1.25rem;
-  border-radius: 2px;
+  padding: 1.35rem;
+  border-radius: var(--radius-md);
   position: relative;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -442,12 +455,12 @@ h3, .h3 {
 }
 .term-object.term-locked {
   border-color: var(--color-settled);
-  background-color: #FAFDFB;
+  background-color: #F8FDF9;
   animation: snapLock 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .term-object.term-rejected {
-  border-color: var(--color-accent-border);
-  background-color: #FFFDFB;
+  border-color: var(--color-warning-border);
+  background-color: #FFFDF9;
   animation: slideBack 0.4s ease;
 }
 
@@ -466,9 +479,9 @@ h3, .h3 {
 
 /* Concession movement track */
 .concession-track {
-  height: 4px;
-  background-color: #EAE8E2;
-  border-radius: 2px;
+  height: 6px;
+  background-color: #E2E8F0;
+  border-radius: var(--radius-pill);
   position: relative;
   overflow: hidden;
 }
@@ -476,7 +489,8 @@ h3, .h3 {
   position: absolute;
   top: 0;
   bottom: 0;
-  background-color: var(--color-accent);
+  background-color: var(--color-paypal-bright);
+  border-radius: var(--radius-pill);
   transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -484,68 +498,62 @@ h3, .h3 {
 .living-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
-  background-color: #F8F7F4;
-  border: 1px solid var(--border-hairline);
-  border-radius: 2px;
+  gap: 0.55rem;
+  padding: 0.45rem 0.95rem;
+  background-color: var(--color-paypal-subtle);
+  border: 1px solid var(--color-paypal-border);
+  border-radius: var(--radius-pill);
   font-family: var(--font-mono);
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--color-paypal-deep);
 }
 .living-pulse-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: #0284C7;
+  background-color: var(--color-paypal-bright);
   animation: pulse-living 2s infinite ease-in-out;
+  shrink-0: 0;
 }
 @keyframes pulse-living {
   0%, 100% { opacity: 0.4; transform: scale(0.9); }
-  50% { opacity: 1; transform: scale(1.15); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 /* 3. Physical Timeline Stages (Soleio Apple-Wallet Style) */
 .physical-timeline-stage {
   cursor: pointer;
-  padding: 1rem;
+  padding: 1.15rem;
   background-color: var(--bg-surface);
   border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-md);
   transition: all 0.2s ease;
   position: relative;
 }
 .physical-timeline-stage:hover {
-  background-color: #FAF9F6;
-  border-color: var(--border-hairline-dark);
+  background-color: #F8FBFE;
+  border-color: var(--color-paypal-bright);
 }
 .physical-timeline-stage.stage-selected {
-  border-color: #111215;
-  background-color: #FDFCFB;
-  box-shadow: 0 0 0 1px #111215;
-}
-.stage-connector-line {
-  position: absolute;
-  top: 50%;
-  right: -12px;
-  width: 12px;
-  height: 2px;
-  background-color: var(--border-hairline);
-  z-index: 10;
+  border-color: var(--color-paypal-deep);
+  background-color: var(--color-paypal-subtle);
+  box-shadow: 0 0 0 2px var(--color-paypal-deep);
 }
 
 /* Apple-Wallet style detail sheet */
 .wallet-detail-card {
   background: #FFFFFF;
   border: 1px solid var(--border-hairline);
-  border-radius: 2px;
-  padding: 1.5rem;
+  border-radius: var(--radius-lg);
+  padding: 1.65rem;
   position: relative;
+  box-shadow: var(--shadow-card);
 }
 .wallet-attr-row {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  padding: 0.5rem 0;
+  padding: 0.65rem 0;
   border-bottom: 1px dashed var(--border-hairline);
   font-size: 0.8125rem;
 }
@@ -557,9 +565,10 @@ h3, .h3 {
 .receipt-paper {
   background-color: #FFFFFF;
   border: 1px solid var(--border-hairline);
-  padding: 2rem;
+  padding: 2.25rem;
   font-family: var(--font-mono);
-  box-shadow: 0 4px 24px -4px rgba(17, 18, 21, 0.08);
+  box-shadow: var(--shadow-modal);
+  border-radius: var(--radius-lg);
   position: relative;
 }
 .receipt-paper::before {
@@ -568,60 +577,66 @@ h3, .h3 {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
-  background: repeating-linear-gradient(90deg, #111215 0 8px, transparent 8px 12px);
+  height: 4px;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: repeating-linear-gradient(90deg, var(--color-paypal-deep) 0 10px, var(--color-paypal-bright) 10px 20px);
 }
 .receipt-divider {
   border-top: 1px dashed var(--border-hairline-dark);
-  margin: 1rem 0;
+  margin: 1.25rem 0;
 }
 
 /* 5. Calm Human Error & Anxiety Boxes */
 .calm-notice-box {
-  background-color: #FAF9F7;
-  border: 1px solid var(--border-hairline-dark);
-  padding: 1.25rem 1.5rem;
-  border-radius: 2px;
+  background-color: #FFFFFF;
+  border: 1px solid var(--border-hairline);
+  padding: 1.35rem 1.65rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
 }
 .calm-notice-box.notice-safety {
-  border-left: 3px solid #14532D;
+  border-left: 4px solid var(--color-settled);
 }
 .calm-notice-box.notice-warning {
-  border-left: 3px solid #C2410C;
+  border-left: 4px solid var(--color-warning);
 }
 .calm-notice-box.notice-freeze {
-  border-left: 3px solid #2563EB;
+  border-left: 4px solid var(--color-paypal-bright);
 }
 
 /* Handshake Seal */
 .handshake-seal {
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  padding: 1.25rem 1.5rem;
+  background: var(--color-settled-subtle);
+  border: 1px solid var(--color-settled-border);
+  padding: 1.35rem 1.65rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-radius: 2px;
+  border-radius: var(--radius-md);
 }
 
 /* Custom tab button */
 .tab-btn {
-  font-family: var(--font-mono);
+  font-family: var(--font-sans);
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.5rem 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 1rem;
   border: 1px solid transparent;
   background: transparent;
   cursor: pointer;
   color: var(--text-muted);
-  transition: all 0.15s ease;
+  border-radius: var(--radius-pill);
+  transition: all 0.18s ease;
+}
+.tab-btn:hover {
+  color: var(--color-paypal-deep);
+  background-color: var(--color-paypal-subtle);
 }
 .tab-btn.active-tab {
-  color: var(--text-primary);
-  background-color: var(--bg-surface);
-  border-color: var(--border-hairline);
-  font-weight: 600;
+  color: #FFFFFF;
+  background-color: var(--color-paypal-deep);
+  border-color: var(--color-paypal-deep);
 }
 
 /* --------------------------------------------------------------------------
@@ -629,14 +644,14 @@ h3, .h3 {
    -------------------------------------------------------------------------- */
 @media (max-width: 640px) {
   h1, .h1 {
-    font-size: 1.65rem;
-    line-height: 1.18;
+    font-size: 1.75rem;
+    line-height: 1.2;
     letter-spacing: -0.025em;
     word-break: normal;
     overflow-wrap: break-word;
   }
   h2, .h2 {
-    font-size: 1.35rem;
+    font-size: 1.4rem;
     line-height: 1.25;
     word-break: normal;
     overflow-wrap: break-word;
