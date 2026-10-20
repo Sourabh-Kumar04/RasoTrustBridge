@@ -874,7 +874,8 @@ async def test_stake_posted_and_returned_in_full_on_success(db_session):
         role="freelancer",
         display_name="Dev",
         trust_score=50.0,
-        completed_deals=2,  # Has completed prior deals
+        completed_deals=2,  # Has completed prior deals (Emerging tier: 7%)
+        created_at=datetime.now(timezone.utc) - timedelta(days=30),
     )
     db_session.add(user_dev)
     db_session.commit()
@@ -895,7 +896,7 @@ async def test_stake_posted_and_returned_in_full_on_success(db_session):
     contract = await contract_service.create_contract(db_session, schema)
     await contract_service.fund_contract(db_session, contract.id, "ORDER-STAKE-001", "CAP-STAKE-001")
 
-    # 1. Freelancer posts 5% stake ($50)
+    # 1. Freelancer posts Emerging tier stake (7% of $1,000 = $70)
     stk = stake_service.post_stake(
         db=db_session,
         contract=contract,
@@ -904,35 +905,57 @@ async def test_stake_posted_and_returned_in_full_on_success(db_session):
         paypal_capture_id="CAP-STK-POSTED",
     )
     assert stk.status == "HELD"
-    assert stk.amount == 50.0
+    assert stk.amount == 70.0
+    assert stk.stake_percentage == 7.0
 
-    # Verify ledger has STAKE_POSTED entry
+    # Symmetric Client Deposit: 50% of freelancer stake = $35
+    assert contract.client_deposit is not None
+    assert contract.client_deposit.amount == 35.0
+    assert contract.client_deposit.status == "HELD"
+
+    # Verify ledger has STAKE_POSTED and CLIENT_DEPOSIT_POSTED entries
     entries = db_session.query(LedgerEntry).filter(
         LedgerEntry.contract_id == contract.id,
         LedgerEntry.entry_type == LedgerEntryType.STAKE_POSTED,
     ).all()
     assert len(entries) == 1
-    assert entries[0].amount == 50.0
+    assert entries[0].amount == 70.0
+
+    cld_entries = db_session.query(LedgerEntry).filter(
+        LedgerEntry.contract_id == contract.id,
+        LedgerEntry.entry_type == LedgerEntryType.CLIENT_DEPOSIT_POSTED,
+    ).all()
+    assert len(cld_entries) == 1
+    assert cld_entries[0].amount == 35.0
 
     # 2. Freelancer submits and client releases milestone
     m1 = contract.milestones[0]
     await contract_service.submit_milestone(db_session, m1.id, MilestoneSubmitRequest(evidence_url="https://github.com/test/repo"))
     await contract_service.release_milestone(db_session, m1.id, MilestoneReleaseRequest(release_note="Full delivery accepted"))
 
-    # 3. Assert contract COMPLETED and stake RETURNED in full
+    # 3. Assert contract COMPLETED, stake and client deposit RETURNED in full
     db_session.refresh(contract)
     db_session.refresh(stk)
     assert contract.status == ContractStatus.COMPLETED
     assert stk.status == "RETURNED"
-    assert stk.returned_amount == 50.0
+    assert stk.returned_amount == 70.0
+    assert contract.client_deposit.status == "RETURNED"
+    assert contract.client_deposit.returned_amount == 35.0
 
-    # Verify ledger has STAKE_RETURNED entry
+    # Verify ledger has STAKE_RETURNED and CLIENT_DEPOSIT_RETURNED entries
     ret_entries = db_session.query(LedgerEntry).filter(
         LedgerEntry.contract_id == contract.id,
         LedgerEntry.entry_type == LedgerEntryType.STAKE_RETURNED,
     ).all()
     assert len(ret_entries) == 1
-    assert ret_entries[0].amount == 50.0
+    assert ret_entries[0].amount == 70.0
+
+    cld_ret = db_session.query(LedgerEntry).filter(
+        LedgerEntry.contract_id == contract.id,
+        LedgerEntry.entry_type == LedgerEntryType.CLIENT_DEPOSIT_RETURNED,
+    ).all()
+    assert len(cld_ret) == 1
+    assert cld_ret[0].amount == 35.0
 
 
 @pytest.mark.asyncio
@@ -949,6 +972,7 @@ async def test_stake_slashed_on_lost_dispute(db_session):
         display_name="Dev",
         trust_score=50.0,
         completed_deals=1,
+        created_at=datetime.now(timezone.utc) - timedelta(days=30),
     )
     db_session.add(user_dev)
     db_session.commit()
@@ -969,10 +993,11 @@ async def test_stake_slashed_on_lost_dispute(db_session):
     contract = await contract_service.create_contract(db_session, schema)
     await contract_service.fund_contract(db_session, contract.id, "ORDER-STAKE-002", "CAP-STAKE-002")
 
-    # 1. Freelancer posts 5% stake ($50)
+    # 1. Freelancer posts Emerging tier stake (7% of $1,000 = $70)
     stk = stake_service.post_stake(db=db_session, contract=contract, freelancer=user_dev)
     assert stk.status == "HELD"
-    assert stk.amount == 50.0
+    assert stk.amount == 70.0
+    assert contract.client_deposit.amount == 35.0
 
     # 2. Client opens dispute
     m1 = contract.milestones[0]
@@ -994,10 +1019,13 @@ async def test_stake_slashed_on_lost_dispute(db_session):
         resolution_notes="Full client refund justified. Freelancer non-performance.",
     )
 
-    # 4. Stake must be SLASHED
+    # 4. Stake must be PARTIALLY SLASHED (50% default = $35, remainder $35 returned to freelancer)
     db_session.refresh(stk)
+    db_session.refresh(contract)
     assert stk.status == "SLASHED"
-    assert stk.slashed_amount == 50.0
+    assert stk.slashed_amount == 35.0
+    assert stk.returned_amount == 35.0
+    assert contract.client_deposit.status == "RETURNED"
 
     # Verify ledger has STAKE_SLASHED entry
     slash_entries = db_session.query(LedgerEntry).filter(
@@ -1005,4 +1033,4 @@ async def test_stake_slashed_on_lost_dispute(db_session):
         LedgerEntry.entry_type == LedgerEntryType.STAKE_SLASHED,
     ).all()
     assert len(slash_entries) == 1
-    assert slash_entries[0].amount == 50.0
+    assert slash_entries[0].amount == 35.0
