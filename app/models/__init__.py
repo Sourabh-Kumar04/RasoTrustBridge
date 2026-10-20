@@ -9,7 +9,7 @@ from app.models.enums import (
 )
 from app.models.contract import Contract
 from app.models.milestone import Milestone
-from app.models.payment import AuditLog, DisputeRecord, EscrowHold, Stake
+from app.models.payment import AuditLog, DisputeRecord, EscrowHold, Stake, ClientDeposit
 from app.models.user import User
 from app.models.notification import Notification
 from app.models.ledger import LedgerEntry
@@ -29,6 +29,7 @@ __all__ = [
     "DisputeRecord",
     "EscrowHold",
     "Stake",
+    "ClientDeposit",
     "User",
     "Notification",
     "LedgerEntry",

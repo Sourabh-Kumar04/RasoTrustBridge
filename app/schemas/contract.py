@@ -111,10 +111,30 @@ class StakeResponseSchema(BaseModel):
     amount: float
     currency: str
     stake_percentage: float
+    party: str = "freelancer"
     status: str
     paypal_order_id: Optional[str] = None
     paypal_capture_id: Optional[str] = None
     slashed_amount: float = 0.0
+    returned_amount: float = 0.0
+    created_at: datetime
+    settled_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ClientDepositResponseSchema(BaseModel):
+    id: str
+    contract_id: str
+    client_id: Optional[str] = None
+    amount: float
+    currency: str
+    party: str = "client"
+    status: str
+    paypal_order_id: Optional[str] = None
+    paypal_capture_id: Optional[str] = None
+    forfeited_amount: float = 0.0
     returned_amount: float = 0.0
     created_at: datetime
     settled_at: Optional[datetime] = None
@@ -152,6 +172,7 @@ class ContractResponseSchema(BaseModel):
     paypal_order_id: Optional[str] = None
     paypal_capture_id: Optional[str] = None
     buyer_timeout_days: int = 7
+    stake_slash_percentage: Optional[float] = 50.0
     client_trust_score: Optional[float] = None
     freelancer_trust_score: Optional[float] = None
     created_at: datetime
@@ -159,6 +180,7 @@ class ContractResponseSchema(BaseModel):
     funded_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
     stake: Optional[StakeResponseSchema] = None
+    client_deposit: Optional[ClientDepositResponseSchema] = None
     milestones: List[MilestoneResponseSchema] = Field(default_factory=list)
     audit_logs: List[AuditLogSchema] = Field(default_factory=list)
 

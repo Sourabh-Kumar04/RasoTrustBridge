@@ -41,6 +41,7 @@ class DisputeResponseSchema(BaseModel):
     description: str
     evidence_bundle: Optional[Dict[str, Any]] = None
     status: DisputeStatus
+    decided_by: Optional[str] = "arbiter"
     resolution_notes: Optional[str] = None
     created_at: datetime
     resolved_at: Optional[datetime] = None

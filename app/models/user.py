@@ -20,11 +20,20 @@ class User(Base):
     trust_score = Column(Float, nullable=False, default=30.0)  # 0 to 100, default 30 (new accounts)
     completed_deals = Column(Integer, nullable=False, default=0)
     disputed_deals = Column(Integer, nullable=False, default=0)
+    disputes_lost = Column(Integer, nullable=False, default=0)
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
     )
+
+    @property
+    def lost_disputes(self) -> int:
+        return self.disputes_lost or 0
+
+    @lost_disputes.setter
+    def lost_disputes(self, val: int):
+        self.disputes_lost = val
 
     # Relationships
     client_contracts = relationship(

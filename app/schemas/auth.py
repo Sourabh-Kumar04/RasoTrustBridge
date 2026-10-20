@@ -29,6 +29,7 @@ class UserResponseSchema(BaseModel):
     trust_score: float = 30.0
     completed_deals: int = 0
     disputed_deals: int = 0
+    disputes_lost: int = 0
     created_at: datetime
 
 

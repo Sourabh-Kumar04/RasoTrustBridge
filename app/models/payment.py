@@ -24,6 +24,10 @@ def generate_stake_id() -> str:
     return f"stk_{uuid.uuid4().hex[:12]}"
 
 
+def generate_client_deposit_id() -> str:
+    return f"cld_{uuid.uuid4().hex[:12]}"
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
@@ -74,6 +78,7 @@ class DisputeRecord(Base):
     # Packaged dispute reduction evidence bundle
     _evidence_bundle = Column("evidence_bundle", Text, nullable=True)
     status = Column(SQLEnum(DisputeStatus), nullable=False, default=DisputeStatus.OPEN)
+    decided_by = Column(String(32), nullable=True, default="arbiter")  # 'client_accept', 'arbiter', 'auto_timeout'
     resolution_notes = Column(Text, nullable=True)
     
     created_at = Column(
@@ -138,6 +143,7 @@ class Stake(Base):
     amount = Column(Float, nullable=False)
     currency = Column(String(8), nullable=False, default="USD")
     stake_percentage = Column(Float, nullable=False, default=5.0)
+    party = Column(String(32), nullable=False, default="freelancer")
     status = Column(String(32), nullable=False, default="HELD")  # HELD, RETURNED, SLASHED
 
     paypal_order_id = Column(String(128), nullable=True)
@@ -155,3 +161,39 @@ class Stake(Base):
 
     contract = relationship("Contract", back_populates="stake")
     freelancer = relationship("User", foreign_keys=[freelancer_id])
+
+
+class ClientDeposit(Base):
+    """
+    Symmetric Client Good-Faith Deposit (Harmer's Graduated Model).
+    Client posts a matching good-faith deposit: 50% of the freelancer's stake amount.
+    - Returned in full when the contract completes normally.
+    - Returned in full if client opens a dispute and WINS (arbiter rules for client).
+    - Forfeited to freelancer as compensation if client opens a frivolous dispute and LOSES.
+    """
+    __tablename__ = "client_deposits"
+
+    id = Column(String(32), primary_key=True, default=generate_client_deposit_id)
+    contract_id = Column(String(32), ForeignKey("contracts.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    client_id = Column(String(32), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    amount = Column(Float, nullable=False)
+    currency = Column(String(8), nullable=False, default="USD")
+    party = Column(String(32), nullable=False, default="client")
+    status = Column(String(32), nullable=False, default="HELD")  # HELD, RETURNED, FORFEITED
+
+    paypal_order_id = Column(String(128), nullable=True)
+    paypal_capture_id = Column(String(128), nullable=True)
+
+    forfeited_amount = Column(Float, nullable=False, default=0.0)
+    returned_amount = Column(Float, nullable=False, default=0.0)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    settled_at = Column(DateTime(timezone=True), nullable=True)
+
+    contract = relationship("Contract", back_populates="client_deposit")
+    client = relationship("User", foreign_keys=[client_id])

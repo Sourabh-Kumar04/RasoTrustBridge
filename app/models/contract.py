@@ -54,6 +54,7 @@ class Contract(Base):
     paypal_order_id = Column(String(128), nullable=True)
     paypal_capture_id = Column(String(128), nullable=True)
     buyer_timeout_days = Column(Integer, nullable=False, default=7)
+    stake_slash_percentage = Column(Float, nullable=False, default=50.0)
     
     # Timestamps
     created_at = Column(
@@ -106,6 +107,12 @@ class Contract(Base):
     )
     stake = relationship(
         "Stake",
+        back_populates="contract",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+    client_deposit = relationship(
+        "ClientDeposit",
         back_populates="contract",
         uselist=False,
         cascade="all, delete-orphan",
