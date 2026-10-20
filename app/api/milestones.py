@@ -16,6 +16,7 @@ from typing import List
 from app.services.contract_service import contract_service
 from app.api.deps import get_current_user
 from app.api.contracts import check_contract_access, is_client, is_freelancer
+from app.models.enums import ActorRole
 
 router = APIRouter(prefix="/milestones", tags=["Milestones"])
 
@@ -129,11 +130,50 @@ async def dispute_milestone(
     """
     Initiates dispute protocol. Milestone is frozen in DISPUTED state,
     and a PayPal-ready immutable evidence pack is automatically assembled.
+    Derives dispute initiator role and email exclusively from authenticated current_user (SEC-03).
     """
     milestone = db.query(Milestone).filter(Milestone.id == milestone_id).first()
     if not milestone:
         raise HTTPException(status_code=404, detail="Milestone not found")
-    check_contract_access(milestone.contract, current_user)
+    contract = milestone.contract
+    check_contract_access(contract, current_user)
+
+    user_is_client = is_client(contract, current_user)
+    user_is_freelancer = is_freelancer(contract, current_user)
+
+    if current_user.role in ("admin", "system"):
+        actual_role = req.initiator_role or ActorRole.CLIENT
+        actual_email = req.initiator_email or current_user.email
+    elif user_is_client and not user_is_freelancer:
+        actual_role = ActorRole.CLIENT
+        actual_email = current_user.email
+        if req.initiator_role and req.initiator_role != ActorRole.CLIENT:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: Cannot initiate dispute as freelancer when authenticated as client.",
+            )
+    elif user_is_freelancer and not user_is_client:
+        actual_role = ActorRole.DEVELOPER
+        actual_email = current_user.email
+        if req.initiator_role and req.initiator_role != ActorRole.DEVELOPER:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: Cannot initiate dispute as client when authenticated as freelancer.",
+            )
+    else:
+        actual_role = ActorRole.DEVELOPER if current_user.role == "freelancer" else ActorRole.CLIENT
+        actual_email = current_user.email
+
+    if current_user.role not in ("admin", "system") and req.initiator_email:
+        if current_user.email and req.initiator_email.strip().lower() != current_user.email.strip().lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: Cannot spoof dispute initiator email.",
+            )
+
+    req.initiator_role = actual_role
+    req.initiator_email = actual_email
+
     return await contract_service.dispute_milestone(db, milestone_id, req)
 
 

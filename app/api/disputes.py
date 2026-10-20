@@ -10,6 +10,7 @@ from app.models.payment import DisputeRecord
 from app.models.enums import DisputeStatus
 from app.schemas.milestone import DisputeResponseSchema
 from app.api.deps import get_current_user, require_admin_user
+from app.api.contracts import check_contract_access
 from app.services.dispute_service import dispute_service
 
 logger = logging.getLogger("trustbridge.disputes")
@@ -90,8 +91,9 @@ def get_dispute(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Retrieves dispute record by dispute ID."""
+    """Retrieves dispute record by dispute ID with contract access authorization (SEC-05)."""
     dispute = db.query(DisputeRecord).filter(DisputeRecord.id == id).first()
     if not dispute:
         raise HTTPException(status_code=404, detail="Dispute not found")
+    check_contract_access(dispute.contract, current_user)
     return dispute
