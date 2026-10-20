@@ -152,17 +152,45 @@ class NegotiatorService:
         buyer_budget = self._extract_price(req.buyer_brief, default=3000.0)
         seller_ask = self._extract_price(req.seller_brief, default=4000.0)
 
-        if seller_ask < buyer_budget:
-            seller_ask, buyer_budget = buyer_budget, seller_ask
-
         buyer_timeline = self._extract_timeline(req.buyer_brief, default=21)
         seller_timeline = self._extract_timeline(req.seller_brief, default=28)
+
+        # Hostile QA hardening 1: Zero or negative budget / ask
+        if buyer_budget <= 0 or seller_ask <= 0:
+            termination_reason = "Invalid or zero economic brief: buyer budget and developer ask must be strictly greater than zero"
+            walk_msg = self._generate_no_deal_turn(1, max(0.0, buyer_budget), max(0.0, seller_ask), req.base_currency, termination_reason)
+            return [
+                NegotiationRoundSchema(
+                    round_number=1,
+                    buyer_turn=walk_msg,
+                    seller_turn=walk_msg,
+                    price_gap=round(abs(seller_ask - buyer_budget), 2),
+                    status="no_deal",
+                )
+            ], [walk_msg], None, "rule_based_fallback", termination_reason
+
+        # Hostile QA hardening 2: Absurd / negative timelines
+        if buyer_timeline <= 0 or seller_timeline <= 0 or buyer_timeline > 3650 or seller_timeline > 3650:
+            termination_reason = "Invalid delivery timeline: timeline must be positive and not exceed 10 years"
+            walk_msg = self._generate_no_deal_turn(1, buyer_budget, seller_ask, req.base_currency, termination_reason)
+            return [
+                NegotiationRoundSchema(
+                    round_number=1,
+                    buyer_turn=walk_msg,
+                    seller_turn=walk_msg,
+                    price_gap=round(abs(seller_ask - buyer_budget), 2),
+                    status="no_deal",
+                )
+            ], [walk_msg], None, "rule_based_fallback", termination_reason
 
         # Active bounds configuration
         has_buyer_cap = (req.buyer_max_budget is not None) or (req.max_over_budget_pct > 0.0)
         buyer_cap_base = req.buyer_max_budget if req.buyer_max_budget is not None else buyer_budget
         effective_buyer_cap = round(buyer_cap_base * (1.0 + req.max_over_budget_pct / 100.0), 2)
         effective_seller_floor = req.seller_min_price if req.seller_min_price is not None else None
+
+        if seller_ask < buyer_budget:
+            seller_ask, buyer_budget = buyer_budget, seller_ask
 
         rounds: List[NegotiationRoundSchema] = []
         transcript: List[NegotiationMessageSchema] = []
@@ -784,10 +812,18 @@ class NegotiatorService:
         ]
 
     def _extract_price(self, text: str, default: float) -> float:
+        matches_neg = re.findall(r"(?:-\s*\$|\$\s*-)\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)", text)
+        if matches_neg:
+            return -float(matches_neg[0].replace(",", ""))
+
         matches = re.findall(r"\$\s*([0-9]+(?:,[0-9]{3})*(?:\.[0-9]+)?)", text)
         if matches:
             return float(matches[0].replace(",", ""))
-        
+
+        matches_word_neg = re.findall(r"(?:budget|ask|price|rate|cost)\s*(?:is|of|:)?\s*-\s*([0-9]+(?:,[0-9]{3})*)", text, re.IGNORECASE)
+        if matches_word_neg:
+            return -float(matches_word_neg[0].replace(",", ""))
+
         matches_word = re.findall(r"(?:budget|ask|price|rate|cost)\s*(?:is|of|:)?\s*([0-9]+(?:,[0-9]{3})*)", text, re.IGNORECASE)
         if matches_word:
             return float(matches_word[0].replace(",", ""))

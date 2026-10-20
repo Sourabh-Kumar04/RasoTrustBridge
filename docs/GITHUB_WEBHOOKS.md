@@ -75,20 +75,40 @@ If only the contract ID is referenced, TrustBridge resolves to the earliest curr
 
 ---
 
-## 5. Automated AI Verification Pipeline
+## 5. Automated AI Verification Pipeline & Anti-Gaming Rules
 
+### 5.1 Verification Security Rules (Polu's Critique Remediation)
+To eliminate fraudulent payouts via empty PRs, unreviewed deliveries, and self-merges, TrustBridge enforces cryptographic and heuristic anti-gaming verification gates on every merged PR:
+
+1. **Reviewer Approval Required**:
+   - A merged PR only qualifies for automatic milestone verification if it includes at least one approving review (`state == "APPROVED"`) from a reviewer **other than the author**.
+   - If the PR is merged without third-party reviewer approval or only contains self-approvals, it is flagged and routed to `PENDING_REVIEW`.
+
+2. **Commit-Hash Anchoring & Full Diff Stat Tracking**:
+   - TrustBridge anchors the exact `merge_commit_sha` along with the full git diff stat (`changed_files`, `additions`, `deletions`, `total_lines_changed`) into the immutable milestone `evidence_payload`.
+   - Subsequent audit logs link directly to the anchored commit SHA to prevent SHA reassignment or post-merge tampering.
+
+3. **Insignificant Code Changes Rejection (Empty PR Guard)**:
+   - PRs with zero or trivial changes (< 5 lines changed across < 2 files, or 0 files/lines modified) are automatically rejected from auto-verification.
+   - The milestone is transitioned to `PENDING_REVIEW` with an anti-gaming audit flag, requiring manual client inspection before release.
+
+4. **Self-Merge Detection**:
+   - If `merger == author` and no other external approving reviewers are present in the review payload, TrustBridge automatically flags the delivery.
+   - The milestone is halted in `PENDING_REVIEW` rather than auto-advancing to `VERIFIED`.
+
+### 5.2 Verification Workflow
 When a GitHub PR is merged:
 1. **HMAC Signature Check**: Validates `X-Hub-Signature-256` using the shared secret.
-2. **Event Filtering**: Confirms `action == "closed"` and `merged == True`.
-3. **Evidence Extraction**: Pulls PR URL, merge commit SHA, author, and timestamp into `evidence_payload`.
+2. **Deduplication Check**: Ensures delivery is fresh via `X-GitHub-Delivery` or payload SHA256 digest.
+3. **Anti-Gaming Evaluation**: Assesses reviewer approvals, self-merge status, and code diff volume. If flagged, transitions milestone to `PENDING_REVIEW`.
 4. **AI Criteria Evaluation**:
    - URL validation (20% weight): Verifies legitimate GitHub PR link.
    - Test & Commit metrics (40% weight): Validates 40-character git commit hash and automated test results.
    - Acceptance criteria checklist (40% weight): Checks delivery specifications.
 5. **State Transition**:
-   - If score $\ge 0.80$, milestone status updates from `FUNDED` → `SUBMITTED` → `VERIFIED`.
-   - Immutable audit log entry `GITHUB_PR_MERGED_VERIFIED` is written to the database.
-   - Client can now release funds with 1 click, triggering instant PayPal Payout.
+   - If anti-gaming checks pass and AI score $\ge 0.80$, milestone status updates from `FUNDED` → `SUBMITTED` → `VERIFIED`.
+   - If anti-gaming flags trigger, milestone transitions to `PENDING_REVIEW` with full evidence payload.
+   - Client can release verified funds or manually review pending submissions.
 
 ---
 

@@ -1,4 +1,5 @@
 import json
+import hashlib
 from fastapi import APIRouter, Depends, HTTPException, Request, Header, status
 from sqlalchemy.orm import Session
 from typing import Optional
@@ -33,30 +34,36 @@ async def github_webhook_endpoint(
             detail="Invalid or missing X-Hub-Signature-256 webhook signature",
         )
 
-    # 2. Webhook Deduplication by Delivery ID (X-GitHub-Delivery)
-    if x_github_delivery:
-        from app.services.webhook_dedup_service import webhook_dedup_service
-        is_new = webhook_dedup_service.check_and_record(
-            db=db,
-            delivery_id=x_github_delivery,
-            source="github",
-            event_type=(x_github_event or "unknown").lower(),
-            payload_bytes=raw_body,
-        )
-        if not is_new:
-            return {
-                "status": "duplicate",
-                "delivery_id": x_github_delivery,
-                "message": f"Webhook delivery '{x_github_delivery}' already processed. Deduplicated.",
-            }
+    # 2. Webhook Deduplication by Delivery ID or Payload Digest
+    from app.services.webhook_dedup_service import webhook_dedup_service
+    delivery_key = x_github_delivery or f"hash_{hashlib.sha256(raw_body).hexdigest()}"
+    is_new = webhook_dedup_service.check_and_record(
+        db=db,
+        delivery_id=delivery_key,
+        source="github",
+        event_type=(x_github_event or "unknown").lower(),
+        payload_bytes=raw_body,
+    )
+    if not is_new:
+        return {
+            "status": "duplicate",
+            "delivery_id": delivery_key,
+            "message": f"Webhook delivery '{delivery_key}' already processed. Deduplicated.",
+        }
 
-    # 3. Parse payload
+    # 3. Parse and validate JSON structure
     try:
         payload = json.loads(raw_body.decode("utf-8"))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Malformed JSON payload: {str(e)}",
+        )
+
+    if not isinstance(payload, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Malformed JSON payload: Root element must be an object",
         )
 
     event_type = (x_github_event or "unknown").lower()

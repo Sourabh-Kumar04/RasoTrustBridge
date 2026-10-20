@@ -133,11 +133,24 @@ class GitHubVerifierService:
         Handles GitHub 'pull_request' webhook event.
         When PR is merged:
         - Locates linked milestone
-        - Gathers evidence payload (PR link, commit SHA, merge details)
-        - Transitions milestone FUNDED -> SUBMITTED -> triggers AI verification -> VERIFIED
+        - Evaluates Anti-Gaming Security Hardening (Polu's critique):
+            * Reviewer approval required: must have approving review from someone other than author
+            * Commit-hash anchoring & Diff stat: anchor merge commit SHA + full diff stat;
+              reject insignificant changes (< 5 lines across < 2 files) -> PENDING_REVIEW
+            * Self-merge detection: if merger == author and no other reviewers -> PENDING_REVIEW
+        - If passed: Transitions milestone FUNDED -> SUBMITTED -> triggers AI verification -> VERIFIED
         """
         action = payload.get("action")
-        pr = payload.get("pull_request", {})
+        pr_raw = payload.get("pull_request")
+        if pr_raw is None or not isinstance(pr_raw, dict):
+            return {
+                "event": "pull_request",
+                "action": action,
+                "status": "malformed",
+                "message": "Malformed pull_request payload object: missing or null pull_request",
+            }
+        pr = pr_raw
+
         is_merged = pr.get("merged", False)
 
         if not (action == "closed" and is_merged):
@@ -151,13 +164,41 @@ class GitHubVerifierService:
 
         title = pr.get("title", "")
         body = pr.get("body", "") or ""
-        head = pr.get("head", {})
+        head = pr.get("head") or {}
         branch = head.get("ref", "")
         commit_sha = pr.get("merge_commit_sha") or head.get("sha", "")
         pr_url = pr.get("html_url", "")
         pr_number = pr.get("number")
-        merged_by = (pr.get("merged_by") or {}).get("login", "unknown")
+        merged_by = (pr.get("merged_by") or {}).get("login", "")
+        author = (pr.get("user") or {}).get("login") or pr.get("author") or ""
         repo_name = (payload.get("repository") or {}).get("full_name", "")
+
+        # Reviews data (can be passed in payload or PR object)
+        reviews = payload.get("reviews") or pr.get("reviews") or []
+        if not isinstance(reviews, list):
+            reviews = []
+
+        approving_reviewers = []
+        for r in reviews:
+            if isinstance(r, dict):
+                r_user = (r.get("user") or {}).get("login") or r.get("author") or r.get("reviewer") or ""
+                r_state = (r.get("state") or r.get("status") or "").upper()
+                if r_state == "APPROVED" and r_user:
+                    if not author or r_user.lower() != author.lower():
+                        approving_reviewers.append(r_user)
+
+        # Diff stat extraction
+        changed_files = pr.get("changed_files")
+        additions = pr.get("additions")
+        deletions = pr.get("deletions")
+        total_lines_changed = (additions or 0) + (deletions or 0) if (additions is not None or deletions is not None) else None
+
+        diff_stat = {
+            "changed_files": changed_files if changed_files is not None else 0,
+            "additions": additions if additions is not None else 0,
+            "deletions": deletions if deletions is not None else 0,
+            "total_lines_changed": total_lines_changed if total_lines_changed is not None else 0,
+        }
 
         # Search for linked milestone
         corpus = f"{title}\n{branch}\n{body}\n{commit_sha}"
@@ -172,6 +213,25 @@ class GitHubVerifierService:
                 "message": f"No linked milestone or contract ID found in PR #{pr_number} ('{title}', branch '{branch}')",
             }
 
+        # Anti-Gaming Security Evaluation (Polu's Critique)
+        flag_reasons = []
+
+        # 1. Self-merge detection: if merger == author and no other reviewers
+        if author and merged_by and author.lower() == merged_by.lower() and not approving_reviewers:
+            flag_reasons.append("Self-merge detected: PR was merged by author without third-party reviewer approval")
+
+        # 2. Reviewer approval requirement: when reviews are provided, must have approval from non-author
+        if reviews and not approving_reviewers:
+            flag_reasons.append("Missing reviewer approval: a merged PR requires at least one approving review from someone other than the author")
+
+        # 3. Diff stat meaningful changes: reject empty / trivial changes (< 5 lines across < 2 files)
+        if changed_files is not None and total_lines_changed is not None:
+            if (changed_files < 2 and total_lines_changed < 5) or changed_files == 0 or total_lines_changed == 0:
+                flag_reasons.append(
+                    f"Insignificant changes ({changed_files} files, {total_lines_changed} lines changed). "
+                    f"Minimum threshold: >= 2 files or >= 5 lines changed"
+                )
+
         evidence_payload = {
             "source": "github_webhook",
             "event": "pull_request",
@@ -182,15 +242,67 @@ class GitHubVerifierService:
             "pr_url": pr_url,
             "branch": branch,
             "commit_sha": commit_sha,
+            "merge_commit_sha": commit_sha,
+            "diff_stat": diff_stat,
+            "author": author,
             "merged_by": merged_by,
             "merged_at": pr.get("merged_at"),
             "repository": repo_name,
+            "approving_reviewers": approving_reviewers,
+            "anti_gaming_flags": flag_reasons,
             "tests_passed": 1,
             "tests_total": 1,
         }
 
-        # If milestone is FUNDED, submit it (triggers AI verification engine)
-        if milestone.status == MilestoneStatus.FUNDED:
+        # If flagged by anti-gaming rules: route to PENDING_REVIEW (not auto-VERIFIED)
+        if flag_reasons:
+            milestone.status = MilestoneStatus.PENDING_REVIEW
+            milestone.evidence_url = pr_url
+            milestone.evidence_notes = f"Flagged for manual review: {'; '.join(flag_reasons)}"
+            milestone.evidence_payload = evidence_payload
+            milestone.verification_score = 0.50
+            milestone.verified_by = "ANTI_GAMING_GUARD"
+
+            audit = AuditLog(
+                contract_id=milestone.contract_id,
+                milestone_id=milestone.id,
+                actor_role=ActorRole.SYSTEM,
+                actor_identifier="GITHUB_WEBHOOK_GUARD",
+                action="GITHUB_PR_FLAGGED_PENDING_REVIEW",
+                description=(
+                    f"GitHub PR #{pr_number} merged in {repo_name} flagged for manual review: "
+                    f"{'; '.join(flag_reasons)}. Milestone status set to PENDING_REVIEW."
+                ),
+                metadata_json={
+                    "pr_number": pr_number,
+                    "commit_sha": commit_sha,
+                    "diff_stat": diff_stat,
+                    "flags": flag_reasons,
+                    "status": "PENDING_REVIEW",
+                },
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(milestone)
+
+            return {
+                "event": "pull_request",
+                "status": "pending_review",
+                "milestone_id": milestone.id,
+                "contract_id": milestone.contract_id,
+                "milestone_title": milestone.title,
+                "milestone_status": "PENDING_REVIEW",
+                "verification_score": 0.50,
+                "is_approved": False,
+                "evidence_url": pr_url,
+                "commit_sha": commit_sha,
+                "diff_stat": diff_stat,
+                "flags": flag_reasons,
+                "message": f"Milestone flagged for manual review: {'; '.join(flag_reasons)}",
+            }
+
+        # If milestone is FUNDED or PENDING_REVIEW (re-verified), submit it (triggers AI verification engine)
+        if milestone.status in (MilestoneStatus.FUNDED, MilestoneStatus.PENDING_REVIEW):
             submit_req = MilestoneSubmitRequest(
                 evidence_url=pr_url,
                 evidence_notes=f"GitHub PR #{pr_number} merged by @{merged_by}: {title}",
@@ -214,6 +326,7 @@ class GitHubVerifierService:
                     "pr_number": pr_number,
                     "pr_url": pr_url,
                     "commit_sha": commit_sha,
+                    "diff_stat": diff_stat,
                     "score": updated_m.verification_score,
                     "is_approved": updated_m.status == MilestoneStatus.VERIFIED,
                 },
@@ -233,6 +346,7 @@ class GitHubVerifierService:
                 "is_approved": updated_m.status == MilestoneStatus.VERIFIED,
                 "evidence_url": updated_m.evidence_url,
                 "commit_sha": commit_sha,
+                "diff_stat": diff_stat,
             }
 
         elif milestone.status == MilestoneStatus.SUBMITTED:
@@ -273,13 +387,15 @@ class GitHubVerifierService:
         Handles GitHub 'push' webhook event.
         Tracks commit SHAs and authors for delivery proof audit trail.
         """
-        ref = payload.get("ref", "")
-        commits = payload.get("commits", [])
-        after_sha = payload.get("after", "")
+        ref = payload.get("ref") or ""
+        commits = payload.get("commits") or []
+        if not isinstance(commits, list):
+            commits = []
+        after_sha = payload.get("after") or ""
         repo_name = (payload.get("repository") or {}).get("full_name", "")
 
         # Build corpus of commit messages + branch name
-        commit_msgs = "\n".join(c.get("message", "") for c in commits)
+        commit_msgs = "\n".join(c.get("message", "") for c in commits if isinstance(c, dict))
         corpus = f"{ref}\n{commit_msgs}\n{after_sha}"
 
         milestone = self.find_linked_milestone(db, corpus)
@@ -297,13 +413,14 @@ class GitHubVerifierService:
         current_payload = milestone.evidence_payload or {}
         tracked_commits = current_payload.get("tracked_commits", [])
         for c in commits:
-            tracked_commits.append({
-                "commit_sha": c.get("id"),
-                "message": c.get("message"),
-                "author": (c.get("author") or {}).get("name"),
-                "url": c.get("url"),
-                "timestamp": c.get("timestamp"),
-            })
+            if isinstance(c, dict):
+                tracked_commits.append({
+                    "commit_sha": c.get("id"),
+                    "message": c.get("message"),
+                    "author": (c.get("author") or {}).get("name") if isinstance(c.get("author"), dict) else None,
+                    "url": c.get("url"),
+                    "timestamp": c.get("timestamp"),
+                })
 
         current_payload["tracked_commits"] = tracked_commits
         current_payload["latest_commit_sha"] = after_sha
