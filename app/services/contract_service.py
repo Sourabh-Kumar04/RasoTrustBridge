@@ -515,6 +515,60 @@ class ContractService:
             ms.verified_by = "BUYER_TIMEOUT_AUTO_RELEASE"
             ms.verification_score = 1.0
 
+            # SEC-07: Trigger payout flow immediately upon buyer timeout auto-release
+            note = f"Auto-release: buyer timeout [Milestone {ms.order_index}: {ms.title}]"
+            idem_key = f"auto_release_payout_{ms.id}_{int(ms.expires_at.timestamp())}"
+            payout_res = await paypal_client.create_payout(
+                recipient_email=contract.developer_email,
+                amount=ms.amount,
+                currency=contract.base_currency,
+                note=note,
+                sender_item_id=ms.id,
+                idempotency_key=idem_key,
+            )
+            batch_id = payout_res.get("payout_batch_id")
+            ms.paypal_payout_batch_id = batch_id
+            ms.paypal_payout_item_id = payout_res.get("payout_item_id")
+            ms.released_at = now
+
+            # Ledger entries for payout flow
+            ledger_service.record_entry(
+                db=db,
+                contract_id=contract.id,
+                milestone_id=ms.id,
+                entry_type=LedgerEntryType.PAYOUT_INITIATED,
+                amount=ms.amount,
+                currency=contract.base_currency,
+                paypal_reference=batch_id,
+                idempotency_key=f"init_{idem_key}",
+            )
+            ledger_service.record_entry(
+                db=db,
+                contract_id=contract.id,
+                milestone_id=ms.id,
+                entry_type=LedgerEntryType.PAYOUT_COMPLETED,
+                amount=ms.amount,
+                currency=contract.base_currency,
+                paypal_reference=batch_id,
+                idempotency_key=idem_key,
+            )
+
+            # Check if all contract milestones finished
+            all_milestones = db.query(Milestone).filter(Milestone.contract_id == contract.id).all()
+            all_done = all(
+                m.status == MilestoneStatus.RELEASED or m.paypal_payout_batch_id is not None
+                for m in all_milestones
+            )
+            if all_done:
+                contract.status = ContractStatus.COMPLETED
+                contract.completed_at = now
+                from app.services.stake_service import stake_service
+                stake_service.return_stake(db, contract.id)
+                stake_service.return_client_deposit(db, contract.id)
+
+            reputation_service.record_successful_release(db, contract.freelancer_user)
+            reputation_service.record_successful_release(db, contract.client_user)
+
             audit = AuditLog(
                 contract_id=contract.id,
                 milestone_id=ms.id,

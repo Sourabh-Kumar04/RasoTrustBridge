@@ -113,10 +113,12 @@ async def release_milestone(
         raise HTTPException(status_code=404, detail="Milestone not found")
     check_contract_access(milestone.contract, current_user)
     if not is_client(milestone.contract, current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Forbidden: Only the client can release milestone funds.",
-        )
+        # SEC-07: Allow freelancer to execute release if client timed out and milestone was auto-verified
+        if not (milestone.verified_by == "BUYER_TIMEOUT_AUTO_RELEASE" and is_freelancer(milestone.contract, current_user)):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: Only the client can release milestone funds.",
+            )
     return await contract_service.release_milestone(db, milestone_id, req)
 
 
