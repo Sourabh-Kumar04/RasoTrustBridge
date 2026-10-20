@@ -17,7 +17,7 @@ class User(Base):
     hashed_password = Column(String(255), nullable=False)
     role = Column(String(32), nullable=False, default="client")  # "client", "freelancer", or "admin"
     display_name = Column(String(128), nullable=False)
-    trust_score = Column(Float, nullable=False, default=50.0)  # 0 to 100, default 50
+    trust_score = Column(Float, nullable=False, default=30.0)  # 0 to 100, default 30 (new accounts)
     completed_deals = Column(Integer, nullable=False, default=0)
     disputed_deals = Column(Integer, nullable=False, default=0)
     created_at = Column(

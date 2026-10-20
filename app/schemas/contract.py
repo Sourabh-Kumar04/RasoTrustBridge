@@ -104,6 +104,33 @@ class LedgerEntryResponseSchema(BaseModel):
         from_attributes = True
 
 
+class StakeResponseSchema(BaseModel):
+    id: str
+    contract_id: str
+    freelancer_id: Optional[str] = None
+    amount: float
+    currency: str
+    stake_percentage: float
+    status: str
+    paypal_order_id: Optional[str] = None
+    paypal_capture_id: Optional[str] = None
+    slashed_amount: float = 0.0
+    returned_amount: float = 0.0
+    created_at: datetime
+    settled_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class PostStakeRequest(BaseModel):
+    paypal_order_id: Optional[str] = None
+    paypal_capture_id: Optional[str] = None
+    stake_percentage: Optional[float] = None
+    stake_amount: Optional[float] = None
+    idempotency_key: Optional[str] = None
+
+
 class ContractResponseSchema(BaseModel):
     id: str
     title: str
@@ -131,6 +158,7 @@ class ContractResponseSchema(BaseModel):
     updated_at: datetime
     funded_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    stake: Optional[StakeResponseSchema] = None
     milestones: List[MilestoneResponseSchema] = Field(default_factory=list)
     audit_logs: List[AuditLogSchema] = Field(default_factory=list)
 

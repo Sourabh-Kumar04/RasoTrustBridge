@@ -20,6 +20,10 @@ def generate_hold_id() -> str:
     return f"hld_{uuid.uuid4().hex[:12]}"
 
 
+def generate_stake_id() -> str:
+    return f"stk_{uuid.uuid4().hex[:12]}"
+
+
 class AuditLog(Base):
     __tablename__ = "audit_logs"
 
@@ -117,3 +121,37 @@ class EscrowHold(Base):
         default=lambda: datetime.now(timezone.utc),
     )
     captured_at = Column(DateTime(timezone=True), nullable=True)
+
+
+class Stake(Base):
+    """
+    Security Deposit / Stake Mechanism for Reputation with Economic Skin.
+    Held via PayPal alongside client escrow; returned on successful delivery or dispute victory,
+    slashed on lost dispute. Imposes economic friction against Sybil / scam reruns.
+    """
+    __tablename__ = "stakes"
+
+    id = Column(String(32), primary_key=True, default=generate_stake_id)
+    contract_id = Column(String(32), ForeignKey("contracts.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
+    freelancer_id = Column(String(32), ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+
+    amount = Column(Float, nullable=False)
+    currency = Column(String(8), nullable=False, default="USD")
+    stake_percentage = Column(Float, nullable=False, default=5.0)
+    status = Column(String(32), nullable=False, default="HELD")  # HELD, RETURNED, SLASHED
+
+    paypal_order_id = Column(String(128), nullable=True)
+    paypal_capture_id = Column(String(128), nullable=True)
+
+    slashed_amount = Column(Float, nullable=False, default=0.0)
+    returned_amount = Column(Float, nullable=False, default=0.0)
+
+    created_at = Column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    settled_at = Column(DateTime(timezone=True), nullable=True)
+
+    contract = relationship("Contract", back_populates="stake")
+    freelancer = relationship("User", foreign_keys=[freelancer_id])

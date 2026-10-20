@@ -104,3 +104,9 @@ class Contract(Base):
         cascade="all, delete-orphan",
         order_by="LedgerEntry.created_at",
     )
+    stake = relationship(
+        "Stake",
+        back_populates="contract",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )

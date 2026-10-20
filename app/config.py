@@ -51,6 +51,14 @@ class Settings(BaseSettings):
     FX_RATES_API_URL: str = "https://open.er-api.com/v6/latest/USD"
     FX_CACHE_TTL_SECONDS: int = 3600
 
+    # Reputation & Economic Skin (Staking & New Account Friction)
+    DEFAULT_STAKE_PERCENTAGE: float = 5.0  # 5% of contract value
+    NEW_ACCOUNT_STAKE_PERCENTAGE: float = 10.0  # 10% for new accounts without prior deal on high-value contracts
+    NEW_ACCOUNT_THRESHOLD_AMOUNT: float = 1000.0  # Threshold for high-value contract restriction ($1,000)
+    NEW_ACCOUNT_AGE_DAYS: int = 7  # Accounts < 7 days old are considered new
+    DEFAULT_NEW_ACCOUNT_TRUST_SCORE: float = 30.0  # New accounts start at 30 trust score
+    DEFAULT_SLASH_PERCENTAGE: float = 100.0  # 100% full slash on lost dispute (partial or full configurable)
+
 
 @lru_cache()
 def get_settings() -> Settings:
