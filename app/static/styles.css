@@ -425,6 +425,206 @@ h3, .h3 {
 }
 
 /* --------------------------------------------------------------------------
+   UI V3 MENTOR-DRIVEN REFINEMENTS (Yubi, Zhuo, Soleio, Rachitsky, Zimmer)
+   -------------------------------------------------------------------------- */
+
+/* 1. Deal Formation Term Objects & Snap Physics */
+.term-object {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  padding: 1.25rem;
+  border-radius: 2px;
+  position: relative;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.term-object:hover {
+  border-color: var(--border-hairline-dark);
+}
+.term-object.term-locked {
+  border-color: var(--color-settled);
+  background-color: #FAFDFB;
+  animation: snapLock 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.term-object.term-rejected {
+  border-color: var(--color-accent-border);
+  background-color: #FFFDFB;
+  animation: slideBack 0.4s ease;
+}
+
+@keyframes snapLock {
+  0% { transform: scale(0.97); }
+  60% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+@keyframes slideBack {
+  0% { transform: translateX(0); }
+  30% { transform: translateX(8px); }
+  70% { transform: translateX(-4px); }
+  100% { transform: translateX(0); }
+}
+
+/* Concession movement track */
+.concession-track {
+  height: 4px;
+  background-color: #EAE8E2;
+  border-radius: 2px;
+  position: relative;
+  overflow: hidden;
+}
+.concession-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background-color: var(--color-accent);
+  transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 2. Living Waiting States (Lenny Rachitsky) */
+.living-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  background-color: #F8F7F4;
+  border: 1px solid var(--border-hairline);
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.living-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #0284C7;
+  animation: pulse-living 2s infinite ease-in-out;
+}
+@keyframes pulse-living {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* 3. Physical Timeline Stages (Soleio Apple-Wallet Style) */
+.physical-timeline-stage {
+  cursor: pointer;
+  padding: 1rem;
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-hairline);
+  transition: all 0.2s ease;
+  position: relative;
+}
+.physical-timeline-stage:hover {
+  background-color: #FAF9F6;
+  border-color: var(--border-hairline-dark);
+}
+.physical-timeline-stage.stage-selected {
+  border-color: #111215;
+  background-color: #FDFCFB;
+  box-shadow: 0 0 0 1px #111215;
+}
+.stage-connector-line {
+  position: absolute;
+  top: 50%;
+  right: -12px;
+  width: 12px;
+  height: 2px;
+  background-color: var(--border-hairline);
+  z-index: 10;
+}
+
+/* Apple-Wallet style detail sheet */
+.wallet-detail-card {
+  background: #FFFFFF;
+  border: 1px solid var(--border-hairline);
+  border-radius: 2px;
+  padding: 1.5rem;
+  position: relative;
+}
+.wallet-attr-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px dashed var(--border-hairline);
+  font-size: 0.8125rem;
+}
+.wallet-attr-row:last-child {
+  border-bottom: none;
+}
+
+/* 4. Receipts for Everything (John Zimmer) */
+.receipt-paper {
+  background-color: #FFFFFF;
+  border: 1px solid var(--border-hairline);
+  padding: 2rem;
+  font-family: var(--font-mono);
+  box-shadow: 0 4px 24px -4px rgba(17, 18, 21, 0.08);
+  position: relative;
+}
+.receipt-paper::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, #111215 0 8px, transparent 8px 12px);
+}
+.receipt-divider {
+  border-top: 1px dashed var(--border-hairline-dark);
+  margin: 1rem 0;
+}
+
+/* 5. Calm Human Error & Anxiety Boxes */
+.calm-notice-box {
+  background-color: #FAF9F7;
+  border: 1px solid var(--border-hairline-dark);
+  padding: 1.25rem 1.5rem;
+  border-radius: 2px;
+}
+.calm-notice-box.notice-safety {
+  border-left: 3px solid #14532D;
+}
+.calm-notice-box.notice-warning {
+  border-left: 3px solid #C2410C;
+}
+.calm-notice-box.notice-freeze {
+  border-left: 3px solid #2563EB;
+}
+
+/* Handshake Seal */
+.handshake-seal {
+  background: #F0FDF4;
+  border: 1px solid #BBF7D0;
+  padding: 1.25rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 2px;
+}
+
+/* Custom tab button */
+.tab-btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.5rem 1rem;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+}
+.tab-btn.active-tab {
+  color: var(--text-primary);
+  background-color: var(--bg-surface);
+  border-color: var(--border-hairline);
+  font-weight: 600;
+}
+
+/* --------------------------------------------------------------------------
    Mobile Responsive Optimizations (375px Audit)
    -------------------------------------------------------------------------- */
 @media (max-width: 640px) {
