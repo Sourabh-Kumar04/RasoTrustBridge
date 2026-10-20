@@ -4,7 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TrustBridge — Programmable Trust for International Freelancers</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230F172A'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 9.07-7 10.18-3.87-1.11-7-5.51-7-10.18V6.3l7-3.12z'/></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23111215'><path d='M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 2.18l7 3.12v4.7c0 4.67-3.13 9.07-7 10.18-3.87-1.11-7-5.51-7-10.18V6.3l7-3.12z'/></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..800;1,9..144,300..700&family=JetBrains+Mono:ital,wght@0,300..700;1,300..700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="/static/styles.css">
   <script>
@@ -12,11 +15,26 @@
       theme: {
         extend: {
           colors: {
-            brand: '#0F172A',
-            slateBorder: '#E5E7EB',
+            ink: '#111215',
+            canvas: '#F9F8F6',
+            surface: '#FFFFFF',
+            hairline: '#E2DFD8',
+            'hairline-dark': '#C8C4B9',
+            accent: {
+              DEFAULT: '#C2410C',
+              hover: '#9A3412',
+              subtle: '#FFF7ED',
+              border: '#FDBA74',
+            },
+            settled: {
+              DEFAULT: '#14532D',
+              subtle: '#F0FDF4',
+              border: '#BBF7D0',
+            }
           },
           fontFamily: {
-            sans: ['Inter', 'sans-serif'],
+            serif: ['Fraunces', 'Georgia', 'serif'],
+            sans: ['Space Grotesk', '-apple-system', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
           }
         }
@@ -24,87 +42,87 @@
     }
   </script>
 </head>
-<body class="bg-white text-slate-900 min-h-screen flex flex-col font-sans selection:bg-slate-900 selection:text-white">
+<body class="bg-[#F9F8F6] text-[#111215] min-h-screen flex flex-col font-sans selection:bg-[#111215] selection:text-white">
 
-  <!-- TOP STATUS BAR / HAIRLINE BANNER -->
-  <aside aria-label="System Status" class="w-full bg-[#FAFAFA] hairline-b text-xs py-2 px-6 flex flex-wrap items-center justify-between text-slate-500 font-mono">
+  <!-- ARCHITECTURAL STATUS BAR -->
+  <aside aria-label="System Status" class="w-full bg-[#F3F1EC] hairline-b text-xs py-2 px-6 flex flex-wrap items-center justify-between text-[#82858F] font-mono">
     <div class="flex items-center space-x-6">
       <div class="flex items-center space-x-2">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-        <span class="text-slate-700 font-medium">CORE PROTOCOL OPERATIONAL</span>
+        <span class="inline-block w-2 h-2 rounded-full bg-[#14532D] animate-pulse"></span>
+        <span class="text-[#111215] font-medium tracking-wider text-[11px]">TB-CORE PROTOCOL OPERATIONAL</span>
       </div>
-      <div class="hidden md:flex items-center space-x-2 text-slate-500">
-        <span>PAYPAL SANDBOX:</span>
-        <span class="text-slate-800 font-medium" id="status-paypal">DUAL-CUSTODY ACTIVE</span>
+      <div class="hidden md:flex items-center space-x-2 text-[#4A4D55]">
+        <span>PAYPAL DUAL-CUSTODY:</span>
+        <span class="text-[#111215] font-medium" id="status-paypal">ACTIVE SANDBOX</span>
       </div>
-      <div class="hidden md:flex items-center space-x-2 text-slate-500">
-        <span>OLLAMA ENGINE:</span>
-        <span class="text-slate-800 font-medium" id="status-ollama">llama3.2:3b ONLINE</span>
+      <div class="hidden md:flex items-center space-x-2 text-[#4A4D55]">
+        <span>ARBITRATION ENGINE:</span>
+        <span class="text-[#111215] font-medium" id="status-ollama">llama3.2:3b ONLINE</span>
       </div>
     </div>
     <div class="flex items-center space-x-6">
       <div class="flex items-center space-x-2">
         <span>SPOT USD/INR:</span>
-        <span class="text-slate-900 font-semibold" id="ticker-usdinr">84.50</span>
+        <span class="text-[#111215] font-semibold" id="ticker-usdinr">84.50</span>
       </div>
-      <a href="/docs" target="_blank" class="hover:text-slate-900 transition flex items-center space-x-1">
-        <span>REST API SPEC</span>
+      <a href="/docs" target="_blank" class="hover:text-[#111215] transition flex items-center space-x-1">
+        <span>API SPEC</span>
         <span>↗</span>
       </a>
     </div>
   </aside>
 
   <!-- NAVIGATION -->
-  <header class="w-full bg-white hairline-b sticky top-0 z-50">
+  <header class="w-full bg-[#F9F8F6] hairline-b sticky top-0 z-50 backdrop-blur-md bg-opacity-95">
     <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
       <!-- LOGO & BRAND -->
-      <a href="#/" class="flex items-center space-x-3 text-slate-900 group">
-        <div class="w-7 h-7 bg-slate-900 text-white flex items-center justify-center font-mono font-bold text-xs rounded-sm">
-          TB
+      <a href="#/" class="flex items-center space-x-3 text-[#111215] group">
+        <div class="w-7 h-7 bg-[#111215] text-[#F9F8F6] flex items-center justify-center font-mono font-bold text-xs rounded-[2px] tracking-tight">
+          §
         </div>
         <div class="flex items-baseline space-x-2">
-          <span class="font-semibold text-lg tracking-tight text-slate-900 group-hover:opacity-80 transition">TrustBridge</span>
-          <span class="font-mono text-[10px] text-slate-400 uppercase tracking-widest">Phase 4</span>
+          <span class="font-serif font-semibold text-xl tracking-tight text-[#111215]">TrustBridge</span>
+          <span class="font-mono text-[9px] text-[#82858F] uppercase tracking-widest">Protocol</span>
         </div>
       </a>
 
       <!-- PRIMARY NAVIGATION TABS -->
-      <nav class="hidden md:flex items-center space-x-8 text-sm font-medium">
-        <a href="#/" id="nav-landing" class="nav-link text-slate-900 hover:text-slate-950 transition py-1 border-b-2 border-transparent">
+      <nav class="hidden md:flex items-center space-x-8 text-xs uppercase tracking-wider font-mono">
+        <a href="#/" id="nav-landing" class="nav-link text-[#111215] hover:text-black transition py-1 border-b border-[#111215]">
           Overview
         </a>
-        <a href="#/dashboard" id="nav-dashboard" class="nav-link text-slate-500 hover:text-slate-900 transition py-1 border-b-2 border-transparent">
-          Dashboard
+        <a href="#/dashboard" id="nav-dashboard" class="nav-link text-[#82858F] hover:text-[#111215] transition py-1 border-b border-transparent">
+          Portfolio
         </a>
-        <a href="#/negotiate" id="nav-negotiate" class="nav-link text-slate-500 hover:text-slate-900 transition py-1 border-b-2 border-transparent flex items-center space-x-1.5">
+        <a href="#/negotiate" id="nav-negotiate" class="nav-link text-[#82858F] hover:text-[#111215] transition py-1 border-b border-transparent flex items-center space-x-1.5">
           <span>AI Negotiator</span>
-          <span class="font-mono text-[9px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">2 Agents</span>
+          <span class="font-mono text-[9px] bg-[#F3F1EC] text-[#4A4D55] px-1.5 py-0.2 rounded border border-[#E2DFD8]">2 Agents</span>
         </a>
-        <a href="#/builder" id="nav-builder" class="nav-link text-slate-500 hover:text-slate-900 transition py-1 border-b-2 border-transparent">
+        <a href="#/builder" id="nav-builder" class="nav-link text-[#82858F] hover:text-[#111215] transition py-1 border-b border-transparent">
           Contract Builder
         </a>
       </nav>
 
       <!-- RIGHT ACTIONS: NOTIFICATIONS + AUTH + MOBILE TOGGLE -->
-      <div class="flex items-center space-x-2 sm:space-x-4">
+      <div class="flex items-center space-x-3 sm:space-x-4">
         
         <!-- NOTIFICATION BELL & DROPDOWN -->
         <div class="relative">
-          <button id="notif-bell-btn" onclick="TrustBridgeApp.toggleNotificationsDropdown()" aria-label="Notifications" class="p-2 text-slate-500 hover:text-slate-900 transition relative rounded-full hover:bg-slate-100 focus:outline-none">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button id="notif-bell-btn" onclick="TrustBridgeApp.toggleNotificationsDropdown()" aria-label="Notifications" class="p-2 text-[#4A4D55] hover:text-[#111215] transition relative rounded hover:bg-[#F3F1EC] focus:outline-none">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
-            <span id="notif-badge" class="hidden absolute top-1 right-1 bg-red-600 text-white font-mono text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+            <span id="notif-badge" class="hidden absolute top-1 right-1 bg-[#C2410C] text-white font-mono text-[9px] font-bold w-3.5 h-3.5 rounded-full flex items-center justify-center">0</span>
           </button>
 
           <!-- NOTIFICATIONS DROPDOWN PANEL -->
-          <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-white hairline-all shadow-xl rounded-md z-50 overflow-hidden">
-            <div class="px-4 py-3 hairline-b bg-[#FAFAFA] flex items-center justify-between">
-              <span class="font-semibold text-xs tracking-wider text-slate-900 uppercase font-mono">Notifications</span>
-              <button onclick="TrustBridgeApp.markAllNotificationsRead()" class="text-[11px] text-blue-600 hover:text-blue-800 font-medium">Mark all read</button>
+          <div id="notif-dropdown" class="hidden absolute right-0 mt-2 w-80 sm:w-96 bg-[#FFFFFF] hairline-all shadow-xl rounded-[2px] z-50 overflow-hidden">
+            <div class="px-4 py-3 hairline-b bg-[#F3F1EC] flex items-center justify-between">
+              <span class="font-semibold text-xs tracking-wider text-[#111215] uppercase font-mono">Telemetry & Alerts</span>
+              <button onclick="TrustBridgeApp.markAllNotificationsRead()" class="text-[11px] font-mono text-[#C2410C] hover:underline">Mark all read</button>
             </div>
-            <div id="notif-list" class="max-h-80 overflow-y-auto divide-y divide-slate-100">
-              <div class="p-6 text-center text-xs text-slate-400 font-mono">No new notifications</div>
+            <div id="notif-list" class="max-h-80 overflow-y-auto divide-y divide-[#E2DFD8]">
+              <div class="p-6 text-center text-xs text-[#82858F] font-mono">No new protocol notifications</div>
             </div>
           </div>
         </div>
@@ -120,23 +138,23 @@
         </div>
 
         <!-- MOBILE HAMBURGER MENU BUTTON -->
-        <button id="mobile-menu-btn" onclick="TrustBridgeApp.toggleMobileMenu()" aria-label="Toggle Navigation" class="md:hidden p-2 text-slate-700 hover:text-slate-950 focus:outline-none">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+        <button id="mobile-menu-btn" onclick="TrustBridgeApp.toggleMobileMenu()" aria-label="Toggle Navigation" class="md:hidden p-2 text-[#111215] hover:text-black focus:outline-none">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </div>
     </div>
 
     <!-- MOBILE NAVIGATION DRAWER -->
-    <div id="mobile-nav-drawer" class="hidden md:hidden hairline-t bg-[#FAFAFA] px-6 py-4 space-y-3 font-medium text-sm">
-      <a href="#/" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-900 py-1.5 hover:text-blue-600">Overview</a>
-      <a href="#/dashboard" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-600 py-1.5 hover:text-blue-600">Dashboard</a>
-      <a href="#/negotiate" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-600 py-1.5 hover:text-blue-600 flex items-center justify-between">
+    <div id="mobile-nav-drawer" class="hidden md:hidden hairline-t bg-[#F3F1EC] px-6 py-4 space-y-3 font-mono text-xs uppercase tracking-wider">
+      <a href="#/" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-[#111215] py-1.5 hover:text-[#C2410C]">Overview</a>
+      <a href="#/dashboard" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-[#4A4D55] py-1.5 hover:text-[#C2410C]">Portfolio</a>
+      <a href="#/negotiate" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-[#4A4D55] py-1.5 hover:text-[#C2410C] flex items-center justify-between">
         <span>AI Negotiator</span>
-        <span class="font-mono text-[9px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded">2 Agents</span>
+        <span class="font-mono text-[9px] bg-[#E2DFD8] text-[#111215] px-1.5 py-0.5 rounded">2 Agents</span>
       </a>
-      <a href="#/builder" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-slate-600 py-1.5 hover:text-blue-600">Contract Builder</a>
+      <a href="#/builder" onclick="TrustBridgeApp.toggleMobileMenu()" class="block text-[#4A4D55] py-1.5 hover:text-[#C2410C]">Contract Builder</a>
     </div>
   </header>
 
@@ -144,164 +162,255 @@
   <div id="toast-container" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
 
   <!-- MAIN VIEWPORT CONTAINER -->
-  <main class="flex-grow w-full max-w-7xl mx-auto px-6 py-8">
+  <main class="flex-grow w-full max-w-7xl mx-auto px-6 py-10">
     
     <!-- ================================================================= -->
     <!-- VIEW 1: LANDING PAGE -->
     <!-- ================================================================= -->
-    <section id="view-landing" class="view-panel space-y-20 py-8">
+    <section id="view-landing" class="view-panel space-y-16 py-4">
+      
       <!-- HERO SECTION -->
-      <div class="max-w-4xl space-y-6 sm:space-y-8">
-        <div class="inline-flex items-center space-x-2 font-mono text-[11px] sm:text-xs uppercase tracking-wider text-slate-600 hairline-all px-2.5 py-1 bg-[#FAFAFA] rounded-sm max-w-full">
-          <span class="w-1.5 h-1.5 rounded-full bg-blue-600 shrink-0"></span>
-          <span class="truncate">Programmable Trust for Cross-Border Freelance</span>
+      <div class="space-y-8">
+        <div class="flex items-center space-x-3 max-w-full overflow-hidden">
+          <span class="font-mono text-[10px] sm:text-[11px] tracking-wider sm:tracking-widest uppercase text-[#82858F] hairline-b pb-0.5 truncate">
+            TB-PROTOCOL // PROGRAMMABLE TRUST FOR CROSS-BORDER WORK
+          </span>
         </div>
 
-        <h1 class="text-3xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-slate-900 leading-[1.15]">
-          Escrow that writes its own code, guarantees foreign exchange, and releases on proof.
-        </h1>
+        <div class="max-w-4xl space-y-6">
+          <h1 class="text-[27px] sm:text-5xl md:text-6xl font-serif font-normal text-[#111215] leading-[1.12] tracking-tight">
+            Programmable trust for cross-border work.
+          </h1>
 
-        <p class="text-base sm:text-lg md:text-xl text-slate-600 leading-relaxed max-w-3xl font-normal">
-          Eliminate freelance payment anxiety. Autonomous buyer and seller AI agents negotiate deal terms, 
-          PayPal sandbox holds dual-custody funds, and automated test runners verify code deliverables before releasing guaranteed FX payouts.
-        </p>
+          <p class="text-base sm:text-xl text-[#4A4D55] leading-relaxed max-w-2xl font-light">
+            Autonomous AI agents negotiate deal terms. PayPal holds dual-custody escrow. Code verification triggers programmatic, FX-guaranteed payouts.
+          </p>
+        </div>
 
-        <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-2 sm:pt-4">
-          <a href="#/negotiate" class="btn-primary text-xs sm:text-sm px-5 py-2.5 sm:px-6 sm:py-3 text-center">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-3 pt-2">
+          <a href="#/negotiate" class="btn-accent text-xs px-6 py-3 text-center">
             <span>Run Agent-to-Agent Negotiation</span>
             <span>→</span>
           </a>
-          <a href="#/builder" class="btn-secondary text-xs sm:text-sm px-5 py-2.5 sm:px-6 sm:py-3 text-center">
+          <a href="#/builder" class="btn-secondary text-xs px-6 py-3 text-center">
             <span>Build Contract from Brief</span>
           </a>
-          <a href="#/dashboard" class="btn-subtle text-xs sm:text-sm px-4 py-2.5 sm:py-3 text-center">
-            <span>Open Dashboard</span>
+          <a href="#/dashboard" class="btn-subtle text-xs px-5 py-3 text-center">
+            <span>Open Portfolio</span>
           </a>
         </div>
       </div>
 
-      <!-- 4 VALUE PILLARS (NO BOXES, HAIRLINE GRID) -->
-      <div class="grid grid-cols-1 md:grid-cols-4 hairline-all divide-y md:divide-y-0 md:divide-x divide-slate-200 bg-white">
-        <div class="p-8 space-y-3">
-          <div class="font-mono text-xs text-slate-400">01 / FX STABILITY</div>
-          <div class="text-2xl font-semibold tracking-tight text-slate-900 font-mono">0.0% Slippage</div>
-          <p class="text-sm text-slate-600 leading-relaxed">
-            Lock USD/INR or EUR exchange rates at contract signing. The developer is insulated from currency devaluation.
-          </p>
+      <!-- LIVE ANIMATED ESCROW FLOW SEQUENCE -->
+      <div class="space-y-4 pt-4">
+        <div class="flex items-center justify-between font-mono text-xs text-[#82858F] uppercase tracking-wider hairline-b pb-2">
+          <div class="flex items-center space-x-2">
+            <span class="flow-pulse-indicator"></span>
+            <span class="text-[#111215] font-semibold">Live Protocol Sequence</span>
+          </div>
+          <span>Continuous Verification Loop</span>
         </div>
-        <div class="p-8 space-y-3">
-          <div class="font-mono text-xs text-slate-400">02 / ESCROW VAULT</div>
-          <div class="text-2xl font-semibold tracking-tight text-slate-900 font-mono">Dual-Custody</div>
-          <p class="text-sm text-slate-600 leading-relaxed">
-            Client deposits funds into PayPal Orders sandbox. Neither party can unilaterally withdraw once active.
-          </p>
-        </div>
-        <div class="p-8 space-y-3">
-          <div class="font-mono text-xs text-slate-400">03 / VERIFICATION</div>
-          <div class="text-2xl font-semibold tracking-tight text-slate-900 font-mono">Objective Proof</div>
-          <p class="text-sm text-slate-600 leading-relaxed">
-            Automated milestone verification via GitHub PR diffs, pytest execution scores, and API endpoint checks.
-          </p>
-        </div>
-        <div class="p-8 space-y-3">
-          <div class="font-mono text-xs text-slate-400">04 / AUTONOMOUS</div>
-          <div class="text-2xl font-semibold tracking-tight text-slate-900 font-mono">AI Agents</div>
-          <p class="text-sm text-slate-600 leading-relaxed">
-            Buyer and seller AI agents negotiate scope, price convergence, and deliverable criteria before signing.
-          </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-4 hairline-all divide-y md:divide-y-0 md:divide-x divide-[#E2DFD8] bg-[#FFFFFF] escrow-flow-container">
+          
+          <!-- STAGE 1: NEGOTIATE -->
+          <div id="flow-node-1" class="flow-step-node active-step p-6 space-y-3 cursor-pointer" onclick="TrustBridgeApp.switchFlowStep(1)">
+            <div class="flex items-center justify-between">
+              <span class="flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#111215] text-[#FFFFFF]">01</span>
+              <span class="font-mono text-[10px] text-[#C2410C] font-semibold uppercase tracking-wider">STAGE 01</span>
+            </div>
+            <div class="font-serif text-lg font-medium text-[#111215]">Negotiate</div>
+            <p class="text-xs text-[#4A4D55] leading-relaxed">
+              Two autonomous AI agents debate buyer scope vs developer rates over multi-round deliberation until reaching mathematical consensus.
+            </p>
+            <div class="font-mono text-[11px] text-[#82858F] pt-2 hairline-t flex items-center justify-between">
+              <span>ENGINE: LLAMA-3.2</span>
+              <span class="text-[#111215]">2 AGENTS</span>
+            </div>
+          </div>
+
+          <!-- STAGE 2: ESCROW -->
+          <div id="flow-node-2" class="flow-step-node p-6 space-y-3 cursor-pointer" onclick="TrustBridgeApp.switchFlowStep(2)">
+            <div class="flex items-center justify-between">
+              <span class="flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#F3F1EC] text-[#4A4D55]">02</span>
+              <span class="font-mono text-[10px] text-[#82858F] font-semibold uppercase tracking-wider">STAGE 02</span>
+            </div>
+            <div class="font-serif text-lg font-medium text-[#111215]">Escrow & FX Lock</div>
+            <p class="text-xs text-[#4A4D55] leading-relaxed">
+              Consensus terms lock USD/INR rates at contract signing. The buyer funds the dual-custody vault via PayPal sandbox authorization.
+            </p>
+            <div class="font-mono text-[11px] text-[#82858F] pt-2 hairline-t flex items-center justify-between">
+              <span>SLIPPAGE: 0.00%</span>
+              <span class="text-[#14532D]">HEDGED</span>
+            </div>
+          </div>
+
+          <!-- STAGE 3: VERIFY -->
+          <div id="flow-node-3" class="flow-step-node p-6 space-y-3 cursor-pointer" onclick="TrustBridgeApp.switchFlowStep(3)">
+            <div class="flex items-center justify-between">
+              <span class="flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#F3F1EC] text-[#4A4D55]">03</span>
+              <span class="font-mono text-[10px] text-[#82858F] font-semibold uppercase tracking-wider">STAGE 03</span>
+            </div>
+            <div class="font-serif text-lg font-medium text-[#111215]">Verify</div>
+            <p class="text-xs text-[#4A4D55] leading-relaxed">
+              The developer submits GitHub PR links and commit SHA. Automated test suites execute cryptographically before release approval.
+            </p>
+            <div class="font-mono text-[11px] text-[#82858F] pt-2 hairline-t flex items-center justify-between">
+              <span>EVALUATOR: PYTEST</span>
+              <span class="text-[#14532D]">PROOF-BASED</span>
+            </div>
+          </div>
+
+          <!-- STAGE 4: RELEASE -->
+          <div id="flow-node-4" class="flow-step-node p-6 space-y-3 cursor-pointer" onclick="TrustBridgeApp.switchFlowStep(4)">
+            <div class="flex items-center justify-between">
+              <span class="flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#F3F1EC] text-[#4A4D55]">04</span>
+              <span class="font-mono text-[10px] text-[#82858F] font-semibold uppercase tracking-wider">STAGE 04</span>
+            </div>
+            <div class="font-serif text-lg font-medium text-[#111215]">Release</div>
+            <p class="text-xs text-[#4A4D55] leading-relaxed">
+              Upon verified acceptance score, programmatic payout executes to the developer's account with guaranteed zero-currency-loss FX conversion.
+            </p>
+            <div class="font-mono text-[11px] text-[#82858F] pt-2 hairline-t flex items-center justify-between">
+              <span>SETTLEMENT: ATOMIC</span>
+              <span class="text-[#111215]">INSTANT</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- HOW IT WORKS TIMELINE SECTION -->
-      <div class="space-y-8 pt-8">
-        <div class="space-y-2">
-          <div class="font-mono text-xs uppercase text-slate-400 tracking-wider">Protocol Lifecycle</div>
-          <h2 class="text-2xl font-semibold tracking-tight text-slate-900">How TrustBridge Works</h2>
+      <!-- INSTITUTIONAL PROOF & GLOBAL RAILS STRIP -->
+      <div class="space-y-4 pt-4">
+        <div class="font-mono text-[11px] uppercase tracking-widest text-[#82858F] text-center sm:text-left">
+          CROSS-BORDER TRUST RAILS // CONNECTING US, UK, EUROPE, AND INDIA
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 hairline-all divide-y md:divide-y-0 md:divide-x divide-slate-200">
-          <div class="p-8 space-y-4">
-            <div class="w-8 h-8 rounded-sm bg-slate-900 text-white font-mono text-sm flex items-center justify-center font-bold">1</div>
-            <div class="text-lg font-semibold text-slate-900">Negotiate</div>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              Two autonomous AI agents debate buyer requirements vs developer rates over multi-round deliberation until reaching consensus.
-            </p>
-            <div class="font-mono text-xs text-blue-600">POST /api/v1/negotiate</div>
+        <div class="grid grid-cols-2 md:grid-cols-4 hairline-all divide-y md:divide-y-0 md:divide-x divide-[#E2DFD8] bg-[#FFFFFF]">
+          <div class="p-6 space-y-1 text-center sm:text-left">
+            <div class="font-mono text-[11px] text-[#82858F] uppercase">FX Hedging Volatility</div>
+            <div class="font-mono text-2xl font-semibold text-[#111215]">0.0% Slippage</div>
+            <div class="text-[11px] text-[#4A4D55]">USD/INR locked at signing</div>
           </div>
-
-          <div class="p-8 space-y-4">
-            <div class="w-8 h-8 rounded-sm bg-slate-900 text-white font-mono text-sm flex items-center justify-center font-bold">2</div>
-            <div class="text-lg font-semibold text-slate-900">Escrow</div>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              Agreed terms auto-generate a structured contract. The buyer funds the escrow vault via PayPal sandbox authorization.
-            </p>
-            <div class="font-mono text-xs text-blue-600">POST /contracts/{id}/fund</div>
+          <div class="p-6 space-y-1 text-center sm:text-left">
+            <div class="font-mono text-[11px] text-[#82858F] uppercase">Vault Security</div>
+            <div class="font-mono text-2xl font-semibold text-[#111215]">Dual-Custody</div>
+            <div class="text-[11px] text-[#4A4D55]">PayPal Orders sandbox vault</div>
           </div>
-
-          <div class="p-8 space-y-4">
-            <div class="w-8 h-8 rounded-sm bg-slate-900 text-white font-mono text-sm flex items-center justify-center font-bold">3</div>
-            <div class="text-lg font-semibold text-slate-900">Verify</div>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              The developer submits deliverables (PR URL, commit SHA, test telemetry). The AI verification engine evaluates criteria satisfaction.
-            </p>
-            <div class="font-mono text-xs text-blue-600">POST /milestones/{id}/submit</div>
+          <div class="p-6 space-y-1 text-center sm:text-left">
+            <div class="font-mono text-[11px] text-[#82858F] uppercase">Deliverable Proof</div>
+            <div class="font-mono text-2xl font-semibold text-[#111215]">Cryptographic</div>
+            <div class="text-[11px] text-[#4A4D55]">PR diffs + pytest telemetry</div>
           </div>
-
-          <div class="p-8 space-y-4">
-            <div class="w-8 h-8 rounded-sm bg-slate-900 text-white font-mono text-sm flex items-center justify-center font-bold">4</div>
-            <div class="text-lg font-semibold text-slate-900">Release</div>
-            <p class="text-sm text-slate-600 leading-relaxed">
-              Upon verified acceptance criteria, programmatic release executes payout to developer with guaranteed locked exchange rate.
-            </p>
-            <div class="font-mono text-xs text-blue-600">POST /milestones/{id}/release</div>
+          <div class="p-6 space-y-1 text-center sm:text-left">
+            <div class="font-mono text-[11px] text-[#82858F] uppercase">Bilateral Arbitration</div>
+            <div class="font-mono text-2xl font-semibold text-[#111215]">Autonomous</div>
+            <div class="text-[11px] text-[#4A4D55]">Bounded multi-round AI agents</div>
           </div>
         </div>
       </div>
 
-      <!-- LIVE FX ENGINE STATUS RIBBON -->
-      <div class="hairline-all p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-[#FAFAFA]">
+      <!-- FORENSIC COMPARISON: LEGACY FREELANCE VS TRUSTBRIDGE -->
+      <div class="space-y-6 pt-4">
         <div class="space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase tracking-wider">FX Exposure Protection Engine</div>
-          <div class="text-lg font-semibold text-slate-900">Live Foreign Exchange Matrix</div>
-          <div class="text-sm text-slate-600">Live hedging rates for USD, INR, EUR, GBP cross-border disbursements.</div>
+          <div class="font-mono text-xs uppercase text-[#82858F] tracking-wider">Protocol Architecture</div>
+          <h2 class="text-2xl font-serif font-normal text-[#111215]">Why TrustBridge Replaces Traditional Freelance Platforms</h2>
         </div>
-        <div class="flex flex-wrap gap-6 font-mono text-sm">
-          <div>
-            <span class="text-slate-400 text-xs block">USD / INR</span>
-            <span class="text-slate-900 font-semibold text-base" id="rate-usd-inr">84.50</span>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 hairline-all divide-y md:divide-y-0 md:divide-x divide-[#E2DFD8] bg-[#FFFFFF]">
+          <!-- TRADITIONAL -->
+          <div class="p-8 space-y-4">
+            <div class="font-mono text-xs text-[#82858F] uppercase tracking-wider">Legacy Platforms (Upwork / Fiverr / Direct Wire)</div>
+            <ul class="space-y-3 text-xs text-[#4A4D55]">
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#991B1B]">✕</span>
+                <span><strong>Net-60 payment delays</strong> and arbitrary platform freezes on freelancer accounts.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#991B1B]">✕</span>
+                <span><strong>Currency depreciation risk:</strong> 10-15% annualized swings in emerging market currencies erode freelancer margins.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#991B1B]">✕</span>
+                <span><strong>Subjective dispute arbitration</strong> where human reviewers lack technical context to judge code quality.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#991B1B]">✕</span>
+                <span><strong>20% fee extraction</strong> with zero programmable escrow or automated milestone verification.</span>
+              </li>
+            </ul>
           </div>
-          <div>
-            <span class="text-slate-400 text-xs block">USD / EUR</span>
-            <span class="text-slate-900 font-semibold text-base" id="rate-usd-eur">0.92</span>
+
+          <!-- TRUSTBRIDGE -->
+          <div class="p-8 space-y-4 bg-[#FCFBF9]">
+            <div class="font-mono text-xs text-[#C2410C] font-semibold uppercase tracking-wider">The TrustBridge Protocol</div>
+            <ul class="space-y-3 text-xs text-[#111215]">
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#14532D]">✓</span>
+                <span><strong>Programmatic atomic release:</strong> Funds disburse automatically upon satisfying objective acceptance criteria.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#14532D]">✓</span>
+                <span><strong>Locked-at-signing FX hedge:</strong> Developer receives the exact agreed INR/EUR amount, insulated from dollar fluctuations.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#14532D]">✓</span>
+                <span><strong>Objective cryptographic proof:</strong> Pytest suites and GitHub PR diffs evaluated by deterministic AI verifier.</span>
+              </li>
+              <li class="flex items-start space-x-2">
+                <span class="font-mono text-[#14532D]">✓</span>
+                <span><strong>Bilateral agent consensus:</strong> AI buyer and seller negotiate bounds and agree before anyone locks money.</span>
+              </li>
+            </ul>
           </div>
-          <div>
-            <span class="text-slate-400 text-xs block">USD / GBP</span>
-            <span class="text-slate-900 font-semibold text-base" id="rate-usd-gbp">0.78</span>
+        </div>
+      </div>
+
+      <!-- LIVE FX MATRIX BANNER -->
+      <div class="hairline-all p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-[#FFFFFF]">
+        <div class="space-y-1">
+          <div class="font-mono text-xs text-[#82858F] uppercase tracking-wider">Hedging & Settlement Matrix</div>
+          <div class="font-serif text-lg font-medium text-[#111215]">Live Foreign Exchange Hedging Rates</div>
+          <div class="text-xs text-[#4A4D55]">Programmatic dual-currency quotes for USD, INR, EUR, and GBP disbursements.</div>
+        </div>
+        <div class="flex flex-wrap gap-6 font-mono text-xs">
+          <div class="p-2.5 hairline-all bg-[#F9F8F6]">
+            <span class="text-[#82858F] text-[10px] block">USD / INR</span>
+            <span class="text-[#111215] font-semibold text-sm" id="rate-usd-inr">84.50</span>
           </div>
-          <div>
-            <span class="text-slate-400 text-xs block">HEDGE STRATEGY</span>
-            <span class="text-emerald-700 font-medium text-xs px-2 py-0.5 bg-emerald-50 border border-emerald-200 rounded">LOCKED_AT_SIGNING</span>
+          <div class="p-2.5 hairline-all bg-[#F9F8F6]">
+            <span class="text-[#82858F] text-[10px] block">USD / EUR</span>
+            <span class="text-[#111215] font-semibold text-sm" id="rate-usd-eur">0.92</span>
+          </div>
+          <div class="p-2.5 hairline-all bg-[#F9F8F6]">
+            <span class="text-[#82858F] text-[10px] block">USD / GBP</span>
+            <span class="text-[#111215] font-semibold text-sm" id="rate-usd-gbp">0.78</span>
+          </div>
+          <div class="p-2.5 hairline-all bg-[#F0FDF4] border border-[#BBF7D0]">
+            <span class="text-[#14532D] text-[10px] block">PROTECTION POLICY</span>
+            <span class="text-[#14532D] font-medium text-xs">LOCKED_AT_SIGNING</span>
           </div>
         </div>
       </div>
     </section>
 
     <!-- ================================================================= -->
-    <!-- VIEW 2: DASHBOARD -->
+    <!-- VIEW 2: DASHBOARD / PORTFOLIO -->
     <!-- ================================================================= -->
-    <section id="view-dashboard" class="view-panel hidden space-y-12">
+    <section id="view-dashboard" class="view-panel hidden space-y-10">
+      
       <!-- HEADER -->
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 hairline-b pb-6">
         <div class="space-y-1">
-          <div class="font-mono text-xs uppercase text-slate-400 tracking-wider">Overview & Telemetry</div>
-          <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Escrow Portfolio</h1>
+          <div class="font-mono text-xs uppercase text-[#82858F] tracking-wider">Capital & Escrow Ledger</div>
+          <h1 class="text-3xl sm:text-4xl font-serif font-normal text-[#111215]">Escrow Portfolio</h1>
         </div>
         <div class="flex flex-wrap items-center gap-2">
           <button onclick="TrustBridgeApp.refreshDashboard()" class="btn-secondary text-xs">
             <span>Refresh</span>
           </button>
-          <a href="#/negotiate" class="btn-primary text-xs">
+          <a href="#/negotiate" class="btn-accent text-xs">
             <span>New Negotiation</span>
+            <span>→</span>
           </a>
           <a href="#/builder" class="btn-secondary text-xs">
             <span>Create Contract</span>
@@ -309,41 +418,77 @@
         </div>
       </div>
 
-      <!-- PORTFOLIO KPI METRICS (HAIRLINE GRID, NO BOXES) -->
-      <div class="grid grid-cols-2 md:grid-cols-4 hairline-all divide-y md:divide-y-0 md:divide-x divide-slate-200">
+      <!-- PORTFOLIO CAPITAL PILLARS (HAIRLINE GRID) -->
+      <div class="grid grid-cols-2 md:grid-cols-4 hairline-all divide-y md:divide-y-0 md:divide-x divide-[#E2DFD8] bg-[#FFFFFF]">
         <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">Total Escrow Value</div>
-          <div class="text-2xl font-semibold text-slate-900 font-mono" id="dash-total-escrow">$0.00</div>
-          <div class="text-xs text-slate-500 font-mono">USD Base Valuation</div>
+          <div class="font-mono text-xs text-[#82858F] uppercase">Active Escrow Vault</div>
+          <div class="text-2xl font-semibold text-[#111215] font-mono" id="dash-total-escrow">$0.00</div>
+          <div class="text-xs text-[#4A4D55] font-mono">USD In Dual-Custody</div>
         </div>
         <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">Payout Exposure</div>
-          <div class="text-2xl font-semibold text-slate-900 font-mono" id="dash-payout-exposure">₹0.00</div>
-          <div class="text-xs text-slate-500 font-mono">INR Developer Payout</div>
+          <div class="font-mono text-xs text-[#82858F] uppercase">Locked Payout Exposure</div>
+          <div class="text-2xl font-semibold text-[#111215] font-mono" id="dash-payout-exposure">₹0.00</div>
+          <div class="text-xs text-[#4A4D55] font-mono">INR Guaranteed Payout</div>
         </div>
         <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">Active Contracts</div>
-          <div class="text-2xl font-semibold text-slate-900 font-mono" id="dash-active-contracts">0</div>
-          <div class="text-xs text-emerald-600 font-mono">Dual-Custody Funded</div>
+          <div class="font-mono text-xs text-[#82858F] uppercase">Active Contracts</div>
+          <div class="text-2xl font-semibold text-[#111215] font-mono" id="dash-active-contracts">0</div>
+          <div class="text-xs text-[#14532D] font-mono">Dual-Custody Funded</div>
         </div>
         <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">Milestones Released</div>
-          <div class="text-2xl font-semibold text-slate-900 font-mono" id="dash-released-milestones">0</div>
-          <div class="text-xs text-slate-500 font-mono">100% Cryptographically Verified</div>
+          <div class="font-mono text-xs text-[#82858F] uppercase">Milestones Released</div>
+          <div class="text-2xl font-semibold text-[#111215] font-mono" id="dash-released-milestones">0</div>
+          <div class="text-xs text-[#4A4D55] font-mono">Cryptographically Settled</div>
+        </div>
+      </div>
+
+      <!-- CONTRACTS TABLE -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-base font-semibold text-[#111215]">Registered Escrow Contracts</h3>
+            <p class="text-xs text-[#82858F]">Active dual-custody agreements, verification states, and settlement CTAs</p>
+          </div>
+          <div class="font-mono text-xs text-[#82858F]">
+            TOTAL: <span id="dash-contract-count" class="font-semibold text-[#111215]">0</span>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto hairline-all bg-[#FFFFFF]">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Contract & Identifier</th>
+                <th>Counterparties</th>
+                <th>Amount (Base / Payout)</th>
+                <th>FX Strategy</th>
+                <th>Milestones Progress</th>
+                <th>Status</th>
+                <th class="text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="contracts-table-body">
+              <tr>
+                <td colspan="7" class="text-center py-12 text-[#82858F] font-mono text-xs">
+                  Loading portfolio contracts...
+                </td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </div>
 
       <!-- FX EXPOSURE ENGINE TABLE -->
-      <div class="space-y-4">
+      <div class="space-y-4 pt-4">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-base font-semibold text-slate-900">Foreign Exchange Risk Exposure</h3>
-            <p class="text-xs text-slate-500">Live hedging evaluation for active cross-border payment milestones</p>
+            <h3 class="text-base font-semibold text-[#111215]">Foreign Exchange Hedging Matrix</h3>
+            <p class="text-xs text-[#82858F]">Dual-currency protection status for active cross-border payment milestones</p>
           </div>
-          <span class="font-mono text-xs text-slate-400">CACHE: REAL-TIME</span>
+          <span class="font-mono text-xs text-[#82858F]">ENGINE: REAL-TIME</span>
         </div>
 
-        <div class="overflow-x-auto hairline-all">
+        <div class="overflow-x-auto hairline-all bg-[#FFFFFF]">
           <table class="data-table">
             <thead>
               <tr>
@@ -362,7 +507,7 @@
                 <td class="font-mono" id="dash-fx-inr-spot">84.50</td>
                 <td><span class="font-mono text-xs">LOCKED_AT_SIGNING</span></td>
                 <td><span class="badge badge-verified">HEDGED</span></td>
-                <td class="font-mono text-emerald-600 font-medium">+₹0.00 (0.00%)</td>
+                <td class="font-mono text-[#14532D] font-medium">+₹0.00 (0.00%)</td>
               </tr>
               <tr>
                 <td class="font-mono font-medium">USD / EUR</td>
@@ -370,43 +515,7 @@
                 <td class="font-mono" id="dash-fx-eur-spot">0.92</td>
                 <td><span class="font-mono text-xs">SPLIT_RISK</span></td>
                 <td><span class="badge badge-active">50/50 BOUND</span></td>
-                <td class="font-mono text-slate-600 font-medium">±0.00%</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- CONTRACTS TABLE -->
-      <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-base font-semibold text-slate-900">Escrow Contracts Ledger</h3>
-            <p class="text-xs text-slate-500">All registered contracts, milestone progress, and settlement states</p>
-          </div>
-          <div class="font-mono text-xs text-slate-400">
-            TOTAL: <span id="dash-contract-count" class="font-semibold text-slate-800">0</span>
-          </div>
-        </div>
-
-        <div class="overflow-x-auto hairline-all">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Contract & Brief</th>
-                <th>Parties</th>
-                <th>Amount (Base / Payout)</th>
-                <th>FX Strategy</th>
-                <th>Milestones Progress</th>
-                <th>Status</th>
-                <th class="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody id="contracts-table-body">
-              <tr>
-                <td colspan="7" class="text-center py-12 text-slate-400 font-mono text-xs">
-                  Loading contracts from TrustBridge core...
-                </td>
+                <td class="font-mono text-[#4A4D55] font-medium">±0.00%</td>
               </tr>
             </tbody>
           </table>
@@ -417,21 +526,22 @@
     <!-- ================================================================= -->
     <!-- VIEW 3: AGENT-TO-AGENT NEGOTIATOR -->
     <!-- ================================================================= -->
-    <section id="view-negotiate" class="view-panel hidden space-y-12">
+    <section id="view-negotiate" class="view-panel hidden space-y-10">
+      
       <!-- HEADER -->
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 hairline-b pb-6">
         <div class="space-y-1">
-          <div class="font-mono text-xs uppercase text-slate-400 tracking-wider">Phase 2B Autonomous Engine</div>
-          <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Agent-to-Agent Negotiator</h1>
-          <p class="text-sm text-slate-600">
-            Two AI agents represent buyer and seller to debate price, milestones, timeline, and FX risk before committing to escrow.
+          <div class="font-mono text-xs uppercase text-[#82858F] tracking-wider">Autonomous Commercial Arbitration</div>
+          <h1 class="text-3xl sm:text-4xl font-serif font-normal text-[#111215]">Agent-to-Agent Negotiator</h1>
+          <p class="text-sm text-[#4A4D55] max-w-2xl font-light">
+            Two autonomous AI agents debate buyer requirements vs developer rates over multi-round deliberation. Mathematical bounds prevent runaway concessions.
           </p>
         </div>
       </div>
 
       <!-- PRESET SCENARIO BUTTONS -->
       <div class="flex flex-wrap items-center gap-3">
-        <span class="font-mono text-xs text-slate-400">PRESETS:</span>
+        <span class="font-mono text-xs text-[#82858F]">SCENARIO PRESETS:</span>
         <button type="button" onclick="TrustBridgeApp.loadNegotiatorPreset('fintech')" class="btn-subtle text-xs hairline-all">
           Fintech API ($3,000 vs $4,000)
         </button>
@@ -444,41 +554,42 @@
       </div>
 
       <!-- DUAL CONFIGURATION INPUTS (BUYER AGENT VS SELLER AGENT) -->
-      <div class="grid grid-cols-1 md:grid-cols-2 hairline-all divide-y md:divide-y-0 md:divide-x divide-slate-200">
+      <div class="grid grid-cols-1 md:grid-cols-2 hairline-all divide-y md:divide-y-0 md:divide-x divide-[#E2DFD8] bg-[#FFFFFF]">
+        
         <!-- BUYER AGENT SIDE -->
         <div class="p-8 space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between hairline-b pb-3">
             <div class="flex items-center space-x-2">
-              <span class="w-3 h-3 bg-blue-600 rounded-sm"></span>
-              <h3 class="text-base font-semibold text-slate-900">Buyer Agent Brief</h3>
+              <span class="w-2.5 h-2.5 bg-[#111215] rounded-[1px]"></span>
+              <h3 class="text-sm font-semibold text-[#111215] font-mono uppercase tracking-wider">Buyer Agent Policy</h3>
             </div>
-            <span class="font-mono text-xs text-slate-400">Acme Client AI</span>
+            <span class="font-mono text-[11px] text-[#82858F]">Acme Client AI</span>
           </div>
 
           <div class="space-y-4">
             <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Buyer Requirements & Budget</label>
+              <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Buyer Requirements & Budget</label>
               <textarea id="buyer-brief" rows="4" class="form-textarea" placeholder="e.g. Need high-performance payment API built with FastAPI and PostgreSQL. Budget $3,000 USD, timeline 21 days.">Need high-performance payment API built with FastAPI and PostgreSQL. Budget $3,000 USD, timeline 21 days.</textarea>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Client Name</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Client Name</label>
                 <input id="buyer-name" type="text" class="form-input" value="Sarah Jenkins">
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Client Email</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Client Email</label>
                 <input id="buyer-email" type="email" class="form-input" value="sarah@acme.com">
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Country</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Country</label>
                 <input id="buyer-country" type="text" class="form-input font-mono" value="US">
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Base Currency</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Base Currency</label>
                 <select id="buyer-currency" class="form-select font-mono">
                   <option value="USD">USD ($)</option>
                   <option value="EUR">EUR (€)</option>
@@ -490,24 +601,24 @@
             <!-- BUYER USER-SET BOUNDS -->
             <div class="grid grid-cols-2 gap-4 hairline-t pt-4">
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">
-                  Never go above (hard cap)
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">
+                  Hard Cap (Ceiling)
                 </label>
                 <div class="relative">
-                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs font-mono">$</span>
+                  <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-[#82858F] text-xs font-mono">$</span>
                   <input id="buyer-max-budget" type="number" step="50" class="form-input pl-7 font-mono text-sm" placeholder="Pre-filled from brief">
                 </div>
-                <p class="text-[10px] text-slate-400 mt-1">Buyer agent will reject any deal above this ceiling.</p>
+                <p class="text-[10px] text-[#82858F] mt-1">Buyer agent rejects offers above this ceiling.</p>
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">
-                  Max Stretch (% over budget)
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">
+                  Max Allowed Stretch
                 </label>
                 <div class="relative">
                   <input id="buyer-over-budget-pct" type="number" step="1" min="0" max="100" value="0" class="form-input pr-7 font-mono text-sm" placeholder="0">
-                  <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 text-xs font-mono">%</span>
+                  <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-[#82858F] text-xs font-mono">%</span>
                 </div>
-                <p class="text-[10px] text-slate-400 mt-1">Default 0% = strict hard cap, zero stretch.</p>
+                <p class="text-[10px] text-[#82858F] mt-1">0% = strict hard cap, zero concession.</p>
               </div>
             </div>
           </div>
@@ -515,38 +626,38 @@
 
         <!-- SELLER AGENT SIDE -->
         <div class="p-8 space-y-6">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between hairline-b pb-3">
             <div class="flex items-center space-x-2">
-              <span class="w-3 h-3 bg-emerald-600 rounded-sm"></span>
-              <h3 class="text-base font-semibold text-slate-900">Seller Agent Brief</h3>
+              <span class="w-2.5 h-2.5 bg-[#C2410C] rounded-[1px]"></span>
+              <h3 class="text-sm font-semibold text-[#111215] font-mono uppercase tracking-wider">Seller Agent Policy</h3>
             </div>
-            <span class="font-mono text-xs text-slate-400">DevStudio Lead AI</span>
+            <span class="font-mono text-[11px] text-[#82858F]">DevStudio Lead AI</span>
           </div>
 
           <div class="space-y-4">
             <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Seller Capabilities & Ask Price</label>
+              <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Seller Capabilities & Ask Rate</label>
               <textarea id="seller-brief" rows="4" class="form-textarea" placeholder="e.g. Senior fintech API developer. Rate $4,000 USD, delivery 28 days with complete test suite and PayPal sandbox integration.">Senior fintech API developer. Rate $4,000 USD, delivery 28 days with complete test suite and PayPal sandbox integration.</textarea>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Developer Name</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Developer Name</label>
                 <input id="seller-name" type="text" class="form-input" value="Arjun Patel">
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Developer Email</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Developer Email</label>
                 <input id="seller-email" type="email" class="form-input" value="arjun@devstudio.in">
               </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Country</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Country</label>
                 <input id="seller-country" type="text" class="form-input font-mono" value="IN">
               </div>
               <div>
-                <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Payout Currency</label>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Payout Currency</label>
                 <select id="seller-currency" class="form-select font-mono">
                   <option value="INR">INR (₹)</option>
                   <option value="EUR">EUR (€)</option>
@@ -557,24 +668,24 @@
 
             <!-- SELLER USER-SET BOUNDS -->
             <div class="hairline-t pt-4">
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">
-                Never agree below (hard floor)
+              <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">
+                Hard Floor (Minimum Viable Rate)
               </label>
               <div class="relative">
-                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 text-xs font-mono">$</span>
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-[#82858F] text-xs font-mono">$</span>
                 <input id="seller-min-price" type="number" step="50" class="form-input pl-7 font-mono text-sm" placeholder="Pre-filled from brief (0 = no floor)">
               </div>
-              <p class="text-[10px] text-slate-400 mt-1">Seller agent will never agree to a payout below this floor.</p>
+              <p class="text-[10px] text-[#82858F] mt-1">Seller agent will walk away below this floor.</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- NEGOTIATION CONTROLS BAR -->
-      <div class="hairline-all p-6 bg-[#FAFAFA] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+      <div class="hairline-all p-6 bg-[#FFFFFF] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div class="flex flex-wrap items-center gap-6">
           <div class="flex items-center space-x-2">
-            <label class="font-mono text-xs uppercase text-slate-500">Max Rounds:</label>
+            <label class="font-mono text-xs uppercase text-[#82858F]">Max Rounds:</label>
             <select id="neg-max-rounds" class="form-select font-mono text-xs w-20 py-1">
               <option value="5" selected>5</option>
               <option value="3">3</option>
@@ -584,20 +695,20 @@
           </div>
 
           <div class="flex items-center space-x-2">
-            <label class="font-mono text-xs uppercase text-slate-500">Walk-Away Gap:</label>
+            <label class="font-mono text-xs uppercase text-[#82858F]">Walk-Away Gap:</label>
             <div class="flex items-center">
               <input type="number" id="neg-walk-away-gap" value="40" min="5" max="100" class="form-input font-mono text-xs w-16 py-1 px-2 text-right">
-              <span class="text-xs text-slate-500 ml-1">%</span>
+              <span class="text-xs text-[#82858F] ml-1">%</span>
             </div>
           </div>
 
           <div class="flex items-center space-x-2">
-            <input type="checkbox" id="neg-auto-contract" checked class="rounded border-slate-300 text-slate-900 focus:ring-0">
-            <label for="neg-auto-contract" class="text-xs font-medium text-slate-700">Auto-create TrustBridge Escrow upon Agreement</label>
+            <input type="checkbox" id="neg-auto-contract" checked class="rounded border-[#C8C4B9] text-[#111215] focus:ring-0">
+            <label for="neg-auto-contract" class="text-xs font-medium text-[#111215]">Auto-create Escrow Contract on Consensus</label>
           </div>
 
           <div class="flex items-center space-x-2">
-            <label class="font-mono text-xs uppercase text-slate-500">Engine:</label>
+            <label class="font-mono text-xs uppercase text-[#82858F]">Engine:</label>
             <select id="neg-engine-select" class="form-select font-mono text-xs w-56 py-1">
               <option value="ollama" selected>Local Ollama (llama3.2:3b)</option>
               <option value="rule_based">Rule-Based Deterministic</option>
@@ -605,7 +716,7 @@
           </div>
         </div>
 
-        <button id="btn-start-negotiation" onclick="TrustBridgeApp.startNegotiation()" class="btn-primary text-sm px-6 py-2.5">
+        <button id="btn-start-negotiation" onclick="TrustBridgeApp.startNegotiation()" class="btn-accent text-xs px-6 py-2.5">
           <span>Start Multi-Round AI Negotiation</span>
           <span>→</span>
         </button>
@@ -613,71 +724,73 @@
 
       <!-- LIVE NEGOTIATION TRANSCRIPT STREAM -->
       <div id="negotiation-results-container" class="hidden space-y-8">
-        <!-- NO DEAL TERMINATION BANNER -->
-        <div id="neg-no-deal-banner" class="hidden hairline-all p-6 bg-amber-50/80 border-amber-300 space-y-2">
-          <div class="inline-flex items-center space-x-2 font-mono text-xs text-amber-800 bg-amber-100 border border-amber-300 px-2.5 py-0.5 rounded">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
-            <span>NEGOTIATION TERMINATED — NO DEAL</span>
+        
+        <!-- DRAMATIC RESOLUTION: NO DEAL TERMINATION BANNER -->
+        <div id="neg-no-deal-banner" class="hidden hairline-all p-8 bg-[#FEF2F2] border-[#FECACA] space-y-3">
+          <div class="inline-flex items-center space-x-2 font-mono text-xs text-[#991B1B] bg-white border border-[#FECACA] px-2.5 py-1 rounded-[2px]">
+            <span class="w-2 h-2 rounded-full bg-[#991B1B]"></span>
+            <span>NEGOTIATION DEADLOCK — NO DEAL</span>
           </div>
-          <div class="text-xl font-semibold text-slate-900" id="neg-no-deal-headline">
+          <div class="text-2xl font-serif font-normal text-[#111215]" id="neg-no-deal-headline">
             Terms Irreconcilable Under Enforced Bounds
           </div>
-          <p class="text-sm text-slate-700 font-mono" id="neg-no-deal-reason"></p>
+          <p class="text-sm text-[#4A4D55] font-mono leading-relaxed" id="neg-no-deal-reason"></p>
         </div>
 
-        <!-- CONSENSUS BANNER -->
-        <div id="neg-consensus-banner" class="hidden hairline-all p-6 bg-white space-y-4">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div class="space-y-1">
-              <div class="inline-flex items-center space-x-2 font-mono text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        <!-- DRAMATIC RESOLUTION: CONSENSUS BANNER -->
+        <div id="neg-consensus-banner" class="hidden hairline-all p-8 bg-[#FFFFFF] space-y-4">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div class="space-y-2">
+              <div class="inline-flex items-center space-x-2 font-mono text-xs text-[#14532D] bg-[#F0FDF4] border border-[#BBF7D0] px-3 py-1 rounded-[2px]">
+                <span class="w-2 h-2 rounded-full bg-[#14532D]"></span>
                 <span>CONSENSUS AGREEMENT REACHED</span>
               </div>
-              <div class="text-2xl font-semibold text-slate-900" id="neg-agreed-headline">
+              <div class="text-3xl font-serif font-normal text-[#111215]" id="neg-agreed-headline">
                 Agreed at $3,400.00 USD
               </div>
-              <p class="text-sm text-slate-600" id="neg-concession-summary"></p>
+              <p class="text-xs text-[#4A4D55] max-w-2xl" id="neg-concession-summary"></p>
             </div>
 
-            <div id="neg-contract-link-box" class="hidden flex flex-col items-end space-y-2">
-              <div class="font-mono text-xs text-slate-400">ESCROW CONTRACT CREATED:</div>
+            <div id="neg-contract-link-box" class="hidden flex flex-col items-start md:items-end space-y-2">
+              <div class="font-mono text-[10px] uppercase text-[#82858F]">ESCROW CONTRACT SYNTHESIZED</div>
               <a id="neg-view-contract-btn" href="#/contracts/" class="btn-primary text-xs">
-                <span>View Contract #<span id="neg-created-contract-id"></span></span>
+                <span>Inspect Contract #<span id="neg-created-contract-id"></span></span>
                 <span>→</span>
               </a>
             </div>
           </div>
         </div>
 
-        <!-- ACTIVE BOUNDS SUMMARY CARD (ABOVE TRANSCRIPT) -->
-        <div id="neg-bounds-summary-bar" class="hairline-all p-5 bg-slate-50 space-y-3">
+        <!-- ACTIVE BOUNDS SUMMARY CARD & SPECTRUM GAUGE -->
+        <div id="neg-bounds-summary-bar" class="hairline-all p-6 bg-[#FFFFFF] space-y-4">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-2">
-              <span class="w-2 h-2 rounded-full bg-blue-600"></span>
-              <span class="font-mono text-xs uppercase text-slate-700 font-semibold tracking-wider">Active Negotiation Bounds</span>
+              <span class="w-2 h-2 rounded-full bg-[#111215]"></span>
+              <span class="font-mono text-xs uppercase text-[#111215] font-semibold tracking-wider">Active Policy Constraints</span>
             </div>
-            <span class="font-mono text-[11px] text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded">Fully User-Bounded Policy</span>
+            <span class="font-mono text-[10px] text-[#C2410C] bg-[#FFF7ED] border border-[#FDBA74] px-2 py-0.5 rounded-[2px]">Bilateral Guardrails Enforced</span>
           </div>
+
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
-            <div class="p-3 bg-white hairline-all space-y-1">
-              <div class="text-[10px] uppercase text-slate-400">Buyer Hard Cap</div>
-              <div class="text-sm font-semibold text-slate-900" id="neg-bound-buyer-cap">$3,000.00</div>
-              <div class="text-[10px] text-slate-500" id="neg-bound-stretch">Stretch: 0%</div>
+            <div class="p-3 bg-[#F9F8F6] hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-[#82858F]">Buyer Hard Cap</div>
+              <div class="text-base font-semibold text-[#111215]" id="neg-bound-buyer-cap">$3,000.00</div>
+              <div class="text-[10px] text-[#4A4D55]" id="neg-bound-stretch">Stretch: 0%</div>
             </div>
-            <div class="p-3 bg-white hairline-all space-y-1">
-              <div class="text-[10px] uppercase text-slate-400">Seller Hard Floor</div>
-              <div class="text-sm font-semibold text-slate-900" id="neg-bound-seller-floor">$0.00</div>
-              <div class="text-[10px] text-slate-500">Floor: Strict Minimum</div>
+            <div class="p-3 bg-[#F9F8F6] hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-[#82858F]">Seller Hard Floor</div>
+              <div class="text-base font-semibold text-[#111215]" id="neg-bound-seller-floor">$0.00</div>
+              <div class="text-[10px] text-[#4A4D55]">Floor: Strict Minimum</div>
             </div>
-            <div class="p-3 bg-white hairline-all space-y-1">
-              <div class="text-[10px] uppercase text-slate-400">Walk-Away Gap</div>
-              <div class="text-sm font-semibold text-slate-900" id="neg-bound-gap">40.0%</div>
-              <div class="text-[10px] text-slate-500">Deadlock Limit</div>
+            <div class="p-3 bg-[#F9F8F6] hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-[#82858F]">Walk-Away Gap</div>
+              <div class="text-base font-semibold text-[#111215]" id="neg-bound-gap">40.0%</div>
+              <div class="text-[10px] text-[#4A4D55]">Deadlock Threshold</div>
             </div>
-            <div class="p-3 bg-white hairline-all space-y-1">
-              <div class="text-[10px] uppercase text-slate-400">Deliberation Limit</div>
-              <div class="text-sm font-semibold text-slate-900" id="neg-bound-rounds">5 Rounds</div>
-              <div class="text-[10px] text-slate-500" id="neg-bound-stagnation">Stagnation: 3 rds</div>
+            <div class="p-3 bg-[#F9F8F6] hairline-all space-y-1">
+              <div class="text-[10px] uppercase text-[#82858F]">Deliberation Limit</div>
+              <div class="text-base font-semibold text-[#111215]" id="neg-bound-rounds">5 Rounds</div>
+              <div class="text-[10px] text-[#4A4D55]" id="neg-bound-stagnation">Stagnation: 3 rds</div>
             </div>
           </div>
         </div>
@@ -685,10 +798,10 @@
         <!-- TRANSCRIPT STREAM HEADER -->
         <div class="flex items-center justify-between hairline-b pb-4">
           <div class="flex items-center space-x-3">
-            <h3 class="text-base font-semibold text-slate-900">Negotiation Transcript</h3>
-            <span class="font-mono text-xs text-slate-400" id="neg-rounds-count">3 Rounds Completed</span>
+            <h3 class="text-base font-semibold text-[#111215]">Cinematic Deliberation Transcript</h3>
+            <span class="font-mono text-xs text-[#82858F]" id="neg-rounds-count">3 Rounds Completed</span>
           </div>
-          <span class="font-mono text-xs text-slate-500" id="neg-model-used-badge">ENGINE: llama3.2:3b</span>
+          <span class="font-mono text-xs text-[#82858F]" id="neg-model-used-badge">ENGINE: llama3.2:3b</span>
         </div>
 
         <!-- TRANSCRIPT MESSAGES FEED -->
@@ -699,13 +812,14 @@
     <!-- ================================================================= -->
     <!-- VIEW 4: CONTRACT BUILDER -->
     <!-- ================================================================= -->
-    <section id="view-builder" class="view-panel hidden space-y-12">
+    <section id="view-builder" class="view-panel hidden space-y-10">
+      
       <!-- HEADER -->
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 hairline-b pb-6">
         <div class="space-y-1">
-          <div class="font-mono text-xs uppercase text-slate-400 tracking-wider">AI Milestone Synthesis</div>
-          <h1 class="text-3xl font-semibold tracking-tight text-slate-900">Contract Builder</h1>
-          <p class="text-sm text-slate-600">
+          <div class="font-mono text-xs uppercase text-[#82858F] tracking-wider">AI Milestone Synthesis</div>
+          <h1 class="text-3xl sm:text-4xl font-serif font-normal text-[#111215]">Contract Builder</h1>
+          <p class="text-sm text-[#4A4D55] max-w-2xl font-light">
             Convert a plain-English freelance brief into verifiable milestones with objective acceptance criteria and FX protection.
           </p>
         </div>
@@ -713,125 +827,128 @@
 
       <!-- BRIEF INPUT FORM -->
       <div class="space-y-6">
-        <div class="hairline-all p-8 space-y-6 bg-white">
-          <div class="space-y-2">
-            <label class="block font-mono text-xs uppercase text-slate-500">Project Brief & Scope (Plain English)</label>
-            <textarea id="builder-brief" rows="4" class="form-textarea" placeholder="e.g. Build a high-performance REST API with FastAPI, JWT authentication, and PostgreSQL database for an e-commerce platform. Total budget is $1,500 USD.">Build a high-performance REST API with FastAPI, JWT authentication, and PostgreSQL database for an e-commerce platform. Total budget is $1,500 USD.</textarea>
+        <div class="p-8 bg-[#FFFFFF] hairline-all space-y-6">
+          <div>
+            <label class="block font-mono text-xs uppercase text-[#82858F] mb-1">Project Brief & Scope Definition</label>
+            <textarea id="builder-brief" rows="4" class="form-textarea" placeholder="Describe the technical deliverables, technology stack, requirements, and acceptance standards...">Build PayPal dual-custody escrow integration with FastAPI backend, PostgreSQL database, and automated pytest verification suites for milestone releases.</textarea>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Client Name</label>
-              <input id="builder-client-name" type="text" class="form-input" value="Sarah Jenkins">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 hairline-t pt-6">
+            <div class="space-y-4">
+              <div class="font-mono text-xs uppercase text-[#111215] font-semibold">Client Specification</div>
+              <div>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Client Name</label>
+                <input id="builder-client-name" type="text" class="form-input" value="Sarah Vance">
+              </div>
+              <div>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Client Country (Base Currency)</label>
+                <div class="grid grid-cols-2 gap-3">
+                  <input id="builder-client-country" type="text" class="form-input font-mono" value="US">
+                  <select id="builder-base-curr" class="form-select font-mono">
+                    <option value="USD">USD ($)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                  </select>
+                </div>
+              </div>
             </div>
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Client Country</label>
-              <input id="builder-client-country" type="text" class="form-input font-mono" value="US">
-            </div>
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Developer Name</label>
-              <input id="builder-dev-name" type="text" class="form-input" value="Arjun Patel">
-            </div>
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Developer Country</label>
-              <input id="builder-dev-country" type="text" class="form-input font-mono" value="IN">
-            </div>
-          </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Budget Amount</label>
-              <input id="builder-budget" type="number" step="50" class="form-input font-mono" value="1500">
-            </div>
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Base Currency</label>
-              <select id="builder-base-curr" class="form-select font-mono">
-                <option value="USD" selected>USD ($)</option>
-                <option value="EUR">EUR (€)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Payout Currency</label>
-              <select id="builder-payout-curr" class="form-select font-mono">
-                <option value="INR" selected>INR (₹)</option>
-                <option value="EUR">EUR (€)</option>
-                <option value="GBP">GBP (£)</option>
-              </select>
-            </div>
-            <div>
-              <label class="block font-mono text-xs uppercase text-slate-500 mb-1">FX Strategy</label>
-              <select id="builder-fx-strat" class="form-select font-mono text-xs">
-                <option value="LOCKED_AT_SIGNING" selected>★ LOCKED_AT_SIGNING (Primary: Guaranteed Payout, Zero Slippage)</option>
-                <optgroup label="Advanced FX Strategies (Discretionary)">
-                  <option value="SPOT_AT_RELEASE">SPOT_AT_RELEASE (Floating Market Rate)</option>
-                  <option value="SPLIT_RISK">SPLIT_RISK (50/50 Shared Currency Volatility)</option>
-                </optgroup>
-              </select>
+            <div class="space-y-4">
+              <div class="font-mono text-xs uppercase text-[#111215] font-semibold">Developer Specification</div>
+              <div>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Developer Name</label>
+                <input id="builder-dev-name" type="text" class="form-input" value="Rahul Sharma">
+              </div>
+              <div>
+                <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Developer Country (Payout Currency)</label>
+                <div class="grid grid-cols-2 gap-3">
+                  <input id="builder-dev-country" type="text" class="form-input font-mono" value="IN">
+                  <select id="builder-payout-curr" class="form-select font-mono">
+                    <option value="INR">INR (₹)</option>
+                    <option value="EUR">EUR (€)</option>
+                    <option value="GBP">GBP (£)</option>
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-2">
-            <span class="font-mono text-xs text-slate-400">Zero external API keys required. Resilient fallback.</span>
-            <button id="btn-generate-milestones" onclick="TrustBridgeApp.generateContractFromBrief()" class="btn-primary text-sm px-6 py-2.5">
-              <span>Generate Milestones with AI</span>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 hairline-t pt-6">
+            <div>
+              <label class="block font-mono text-xs uppercase text-[#82858F] mb-1">Total Agreed Valuation</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-[#82858F] text-xs font-mono">$</span>
+                <input id="builder-budget" type="number" step="100" class="form-input pl-7 font-mono text-sm" value="3500">
+              </div>
+            </div>
+            <div>
+              <label class="block font-mono text-xs uppercase text-[#82858F] mb-1">FX Protection Strategy</label>
+              <select id="builder-fx-strat" class="form-select font-mono text-sm">
+                <option value="LOCKED_AT_SIGNING" selected>LOCKED_AT_SIGNING (0% Slippage to Freelancer)</option>
+                <option value="SPOT_AT_RELEASE">SPOT_AT_RELEASE (Spot Floating Rate)</option>
+                <option value="SPLIT_RISK">SPLIT_RISK (50/50 FX Collar)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end pt-4 hairline-t">
+            <button id="btn-generate-milestones" onclick="TrustBridgeApp.generateContractFromBrief()" class="btn-accent text-xs px-6 py-2.5">
+              <span>Synthesize Milestones with AI</span>
               <span>→</span>
             </button>
           </div>
         </div>
+      </div>
 
-        <!-- PREVIEW GENERATED MILESTONES -->
-        <div id="builder-preview-container" class="hidden space-y-6">
-          <div class="flex items-center justify-between hairline-b pb-4">
-            <div class="space-y-1">
-              <div class="font-mono text-xs text-slate-400 uppercase">AI Synthesis Output</div>
-              <h3 class="text-xl font-semibold text-slate-900" id="preview-contract-title">Contract Title Preview</h3>
-            </div>
-            <div class="flex items-center space-x-3">
-              <span class="font-mono text-xs bg-slate-100 px-2 py-1 rounded" id="preview-generator-source">Engine</span>
-              <button onclick="TrustBridgeApp.confirmAndDeployContract()" class="btn-primary text-xs px-4 py-2">
-                <span>Confirm & Deploy Escrow Contract</span>
-                <span>→</span>
-              </button>
-            </div>
+      <!-- SYNTHESIZED PREVIEW CONTAINER -->
+      <div id="builder-preview-container" class="hidden space-y-6 pt-4">
+        <div class="flex items-center justify-between hairline-b pb-4">
+          <div>
+            <div class="font-mono text-xs uppercase text-[#82858F]">Synthesized Contract Proposal</div>
+            <h3 class="text-xl font-serif font-normal text-[#111215]" id="preview-contract-title">Enterprise Payment Integration</h3>
           </div>
+          <div class="text-right font-mono">
+            <div class="text-xs text-[#82858F]">TOTAL AMOUNT:</div>
+            <div class="text-lg font-semibold text-[#111215]" id="preview-total-amount">$3,500.00 USD</div>
+          </div>
+        </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-3 hairline-all divide-y md:divide-y-0 md:divide-x divide-slate-200 bg-[#FAFAFA] p-6 text-sm">
-            <div>
-              <span class="font-mono text-xs text-slate-400 block">SUGGESTED BUDGET</span>
-              <span class="font-mono font-semibold text-lg text-slate-900" id="preview-total-amount">$0.00 USD</span>
-            </div>
-            <div>
-              <span class="font-mono text-xs text-slate-400 block">RECOMMENDED FX STRATEGY</span>
-              <span class="font-mono font-semibold text-base text-slate-900" id="preview-fx-strategy">LOCKED_AT_SIGNING</span>
-            </div>
-            <div>
-              <span class="font-mono text-xs text-slate-400 block">DISPUTE PROTOCOL</span>
-              <span class="text-xs text-slate-700" id="preview-dispute-summary">PayPal Native Mediation</span>
-            </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 hairline-all divide-y md:divide-y-0 md:divide-x divide-[#E2DFD8] bg-[#FFFFFF] text-xs font-mono p-4">
+          <div>
+            <span class="text-[#82858F]">FX POLICY:</span>
+            <span class="text-[#111215] font-semibold block mt-0.5" id="preview-fx-strategy">LOCKED_AT_SIGNING</span>
           </div>
+          <div class="md:pl-4">
+            <span class="text-[#82858F]">GENERATION SOURCE:</span>
+            <span class="text-[#111215] font-semibold block mt-0.5" id="preview-generator-source">AI_ENGINE</span>
+          </div>
+          <div class="md:pl-4">
+            <span class="text-[#82858F]">DISPUTE PROTOCOL:</span>
+            <span class="text-[#111215] font-semibold block mt-0.5" id="preview-dispute-summary">AUTOMATED_CRYPTO_AUDIT</span>
+          </div>
+        </div>
 
-          <!-- MILESTONE PREVIEW LIST -->
-          <div class="space-y-4">
-            <h4 class="font-mono text-xs uppercase text-slate-400">Structured Milestones Breakdown</h4>
-            <div id="preview-milestones-list" class="hairline-all divide-y divide-slate-200 bg-white"></div>
-          </div>
+        <div class="space-y-4">
+          <div class="font-mono text-xs uppercase text-[#82858F]">Synthesized Milestones</div>
+          <div id="preview-milestones-list" class="space-y-4"></div>
         </div>
       </div>
     </section>
 
     <!-- ================================================================= -->
-    <!-- VIEW 5: CONTRACT DETAIL -->
+    <!-- VIEW 5: CONTRACT FORENSIC DOSSIER -->
     <!-- ================================================================= -->
-    <section id="view-contract-detail" class="view-panel hidden space-y-12">
+    <section id="view-contract-detail" class="view-panel hidden space-y-10">
+      
       <!-- HEADER -->
       <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 hairline-b pb-6">
         <div class="space-y-1">
           <div class="flex items-center space-x-3">
-            <a href="#/dashboard" class="font-mono text-xs text-slate-400 hover:text-slate-800 transition">← Back to Dashboard</a>
-            <span class="text-slate-300">/</span>
-            <span class="font-mono text-xs text-slate-500 font-medium" id="detail-contract-id">TB-</span>
+            <a href="#/dashboard" class="font-mono text-xs text-[#82858F] hover:text-[#111215] transition">← Back to Portfolio</a>
+            <span class="text-[#C8C4B9]">/</span>
+            <span class="font-mono text-xs text-[#4A4D55] font-medium" id="detail-contract-id">TB-</span>
           </div>
-          <h1 class="text-3xl font-semibold tracking-tight text-slate-900" id="detail-contract-title">Contract Detail</h1>
+          <h1 class="text-3xl sm:text-4xl font-serif font-normal text-[#111215]" id="detail-contract-title">Contract Dossier</h1>
         </div>
         <div class="flex items-center space-x-3">
           <span class="badge" id="detail-contract-status">DRAFT</span>
@@ -839,52 +956,52 @@
         </div>
       </div>
 
-      <!-- CONTRACT METADATA STRIP (HAIRLINE GRID) -->
-      <div class="grid grid-cols-2 md:grid-cols-4 hairline-all divide-y md:divide-y-0 md:divide-x divide-slate-200 text-sm">
-        <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">Client (Buyer)</div>
-          <div class="font-semibold text-slate-900" id="detail-client-name">Sarah Jenkins</div>
-          <div class="font-mono text-xs text-slate-500" id="detail-client-email">sarah@acme.com (US)</div>
-          <div class="font-mono text-xs text-emerald-700 font-medium" id="detail-client-trust">Trust Score: 50.0/100</div>
+      <!-- CONTRACT METADATA & TRUST SCORE CERTIFICATE -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 hairline-all divide-y sm:divide-y-0 sm:divide-x divide-[#E2DFD8] bg-[#FFFFFF] text-sm">
+        <div class="p-6 space-y-1.5">
+          <div class="font-mono text-xs text-[#82858F] uppercase">Client (Buyer)</div>
+          <div class="font-semibold text-[#111215]" id="detail-client-name">Sarah Jenkins</div>
+          <div class="font-mono text-xs text-[#4A4D55]" id="detail-client-email">sarah@acme.com (US)</div>
+          <div class="font-mono text-xs text-[#14532D] font-medium bg-[#F0FDF4] px-1.5 py-0.5 rounded-[2px] inline-block border border-[#BBF7D0]" id="detail-client-trust">Trust Score: 50.0/100</div>
         </div>
-        <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">Developer (Seller)</div>
-          <div class="font-semibold text-slate-900" id="detail-dev-name">Arjun Patel</div>
-          <div class="font-mono text-xs text-slate-500" id="detail-dev-email">arjun@devstudio.in (IN)</div>
-          <div class="font-mono text-xs text-emerald-700 font-medium" id="detail-dev-trust">Trust Score: 50.0/100</div>
+        <div class="p-6 space-y-1.5">
+          <div class="font-mono text-xs text-[#82858F] uppercase">Developer (Seller)</div>
+          <div class="font-semibold text-[#111215]" id="detail-dev-name">Arjun Patel</div>
+          <div class="font-mono text-xs text-[#4A4D55]" id="detail-dev-email">arjun@devstudio.in (IN)</div>
+          <div class="font-mono text-xs text-[#14532D] font-medium bg-[#F0FDF4] px-1.5 py-0.5 rounded-[2px] inline-block border border-[#BBF7D0]" id="detail-dev-trust">Trust Score: 50.0/100</div>
         </div>
-        <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">Escrow Total & FX</div>
-          <div class="font-mono font-semibold text-lg text-slate-900" id="detail-total-amount">$0.00 USD</div>
-          <div class="font-mono text-xs text-slate-500" id="detail-fx-info">LOCKED @ 84.50</div>
+        <div class="p-6 space-y-1.5">
+          <div class="font-mono text-xs text-[#82858F] uppercase">Escrow Total & FX</div>
+          <div class="font-mono font-semibold text-lg text-[#111215]" id="detail-total-amount">$0.00 USD</div>
+          <div class="font-mono text-xs text-[#4A4D55]" id="detail-fx-info">LOCKED @ 84.50</div>
         </div>
-        <div class="p-6 space-y-1">
-          <div class="font-mono text-xs text-slate-400 uppercase">PayPal Order ID</div>
-          <div class="font-mono text-xs text-slate-900" id="detail-paypal-order">None</div>
-          <div class="font-mono text-xs text-slate-400" id="detail-funded-at">Unfunded</div>
+        <div class="p-6 space-y-1.5">
+          <div class="font-mono text-xs text-[#82858F] uppercase">PayPal Vault Order</div>
+          <div class="font-mono text-xs text-[#111215] truncate" id="detail-paypal-order">None</div>
+          <div class="font-mono text-xs text-[#82858F]" id="detail-funded-at">Unfunded</div>
         </div>
       </div>
 
-      <!-- MILESTONES TIMELINE -->
+      <!-- FORENSIC EXHIBIT DELIVERABLE NARRATIVE -->
       <div class="space-y-6">
         <div class="flex items-center justify-between">
           <div>
-            <h3 class="text-base font-semibold text-slate-900">Milestone Deliverable Timeline</h3>
-            <p class="text-xs text-slate-500">Submit deliverables, execute cryptographic verification, and trigger payouts</p>
+            <h3 class="text-base font-semibold text-[#111215]">Milestone Exhibits & Verification Timeline</h3>
+            <p class="text-xs text-[#82858F]">Forensic exhibits of deliverables, automated verification scores, and atomic payouts</p>
           </div>
         </div>
 
-        <div id="detail-milestones-list" class="hairline-all divide-y divide-slate-200 bg-white"></div>
+        <div id="detail-milestones-list" class="hairline-all divide-y divide-[#E2DFD8] bg-[#FFFFFF]"></div>
       </div>
 
-      <!-- AUDIT TRAIL LEDGER -->
-      <div class="space-y-4">
+      <!-- IMMUTABLE AUDIT TRAIL LEDGER -->
+      <div class="space-y-4 pt-4">
         <div class="flex items-center justify-between">
-          <h3 class="text-base font-semibold text-slate-900">Immutable Audit Trail</h3>
-          <span class="font-mono text-xs text-slate-400">CRYPTOGRAPHIC SEQUENCE</span>
+          <h3 class="text-base font-semibold text-[#111215]">Immutable Audit Ledger</h3>
+          <span class="font-mono text-xs text-[#82858F]">CRYPTOGRAPHIC SEQUENCE</span>
         </div>
 
-        <div class="overflow-x-auto hairline-all">
+        <div class="overflow-x-auto hairline-all bg-[#FFFFFF]">
           <table class="data-table">
             <thead>
               <tr>
@@ -896,7 +1013,7 @@
             </thead>
             <tbody id="detail-audit-logs">
               <tr>
-                <td colspan="4" class="text-center py-6 text-slate-400 font-mono text-xs">No audit events recorded</td>
+                <td colspan="4" class="text-center py-6 text-[#82858F] font-mono text-xs">No audit events recorded</td>
               </tr>
             </tbody>
           </table>
@@ -907,31 +1024,31 @@
   </main>
 
   <!-- MODAL: AUTHENTICATION (SIGN IN / REGISTER) -->
-  <div id="modal-auth" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white hairline-all max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl rounded-sm">
+  <div id="modal-auth" class="fixed inset-0 bg-[#111215]/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#FFFFFF] hairline-all max-w-md w-full p-6 sm:p-8 space-y-6 shadow-2xl rounded-[2px]">
       <div class="flex items-center justify-between hairline-b pb-4">
         <div class="flex items-center space-x-4">
-          <button id="auth-tab-login" onclick="TrustBridgeApp.switchAuthTab('login')" class="text-sm font-semibold text-slate-900 pb-1 border-b-2 border-slate-900">
+          <button id="auth-tab-login" onclick="TrustBridgeApp.switchAuthTab('login')" class="text-sm font-semibold text-[#111215] pb-1 border-b-2 border-[#111215]">
             Sign In
           </button>
-          <button id="auth-tab-register" onclick="TrustBridgeApp.switchAuthTab('register')" class="text-sm font-medium text-slate-400 hover:text-slate-800 pb-1 border-b-2 border-transparent">
+          <button id="auth-tab-register" onclick="TrustBridgeApp.switchAuthTab('register')" class="text-sm font-medium text-[#82858F] hover:text-[#111215] pb-1 border-b-2 border-transparent">
             Create Account
           </button>
         </div>
-        <button onclick="TrustBridgeApp.closeAuthModal()" class="text-slate-400 hover:text-slate-700 text-lg leading-none">✕</button>
+        <button onclick="TrustBridgeApp.closeAuthModal()" class="text-[#82858F] hover:text-[#111215] text-lg leading-none">✕</button>
       </div>
 
       <!-- ERROR ALERT -->
-      <div id="auth-error-alert" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded"></div>
+      <div id="auth-error-alert" class="hidden p-3 bg-[#FEF2F2] border border-[#FECACA] text-[#991B1B] text-xs rounded-[2px] font-mono"></div>
 
       <!-- FORM: LOGIN -->
       <form id="form-login" onsubmit="event.preventDefault(); TrustBridgeApp.executeLogin();" class="space-y-4">
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Email Address</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Email Address</label>
           <input id="login-email" type="email" required placeholder="you@example.com" class="form-input text-sm">
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Password</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Password</label>
           <input id="login-password" type="password" required placeholder="••••••••" class="form-input text-sm">
         </div>
         <div class="pt-2">
@@ -945,26 +1062,26 @@
       <!-- FORM: REGISTER -->
       <form id="form-register" onsubmit="event.preventDefault(); TrustBridgeApp.executeRegister();" class="hidden space-y-4">
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Display Name</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Display Name</label>
           <input id="reg-name" type="text" required placeholder="Alex Vance" class="form-input text-sm">
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Account Role</label>
-          <select id="reg-role" class="form-select text-sm">
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Account Role</label>
+          <select id="reg-role" class="form-select text-sm font-mono">
             <option value="client">Client (Hire & Fund Escrow)</option>
             <option value="freelancer">Freelancer (Deliver & Receive Payouts)</option>
           </select>
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Email Address</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Email Address</label>
           <input id="reg-email" type="email" required placeholder="you@domain.com" class="form-input text-sm">
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Password (Min 6 Characters)</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Password (Min 6 Characters)</label>
           <input id="reg-password" type="password" minlength="6" required placeholder="••••••••" class="form-input text-sm">
         </div>
         <div class="pt-2">
-          <button type="submit" id="btn-reg-submit" class="btn-primary w-full text-xs py-2.5">
+          <button type="submit" id="btn-reg-submit" class="btn-accent w-full text-xs py-2.5">
             <span>Create Free Account</span>
             <span>→</span>
           </button>
@@ -974,42 +1091,42 @@
   </div>
 
   <!-- MODAL: EVIDENCE SUBMISSION -->
-  <div id="modal-submit-evidence" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-white hairline-all max-w-lg w-full p-8 space-y-6">
+  <div id="modal-submit-evidence" class="fixed inset-0 bg-[#111215]/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-[#FFFFFF] hairline-all max-w-lg w-full p-8 space-y-6 shadow-2xl rounded-[2px]">
       <div class="flex items-center justify-between hairline-b pb-4">
-        <h3 class="text-lg font-semibold text-slate-900">Submit Milestone Deliverable</h3>
-        <button onclick="TrustBridgeApp.closeSubmitModal()" class="text-slate-400 hover:text-slate-700">✕</button>
+        <h3 class="text-lg font-serif font-medium text-[#111215]">Submit Milestone Deliverable</h3>
+        <button onclick="TrustBridgeApp.closeSubmitModal()" class="text-[#82858F] hover:text-[#111215]">✕</button>
       </div>
 
       <div class="space-y-4">
         <input type="hidden" id="modal-milestone-id">
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">GitHub Pull Request / Repository URL</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">GitHub Pull Request / Repository URL</label>
           <input id="modal-evidence-url" type="url" class="form-input font-mono text-xs" value="https://github.com/Sourabh-Kumar04/TrustBridge/pull/2">
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Commit SHA</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Commit SHA</label>
           <input id="modal-evidence-sha" type="text" class="form-input font-mono text-xs" value="7e7b814a601efc9b207ac3a9089">
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Tests Passed</label>
+            <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Tests Passed</label>
             <input id="modal-tests-passed" type="number" class="form-input font-mono" value="23">
           </div>
           <div>
-            <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Total Tests</label>
+            <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Total Tests</label>
             <input id="modal-tests-total" type="number" class="form-input font-mono" value="23">
           </div>
         </div>
         <div>
-          <label class="block font-mono text-xs uppercase text-slate-500 mb-1">Notes / Release Description</label>
+          <label class="block font-mono text-[11px] uppercase text-[#82858F] mb-1">Notes / Release Telemetry</label>
           <textarea id="modal-evidence-notes" rows="2" class="form-textarea text-xs">All 23 pytest suites passing. Implementation completed with complete PayPal sandbox integration.</textarea>
         </div>
       </div>
 
       <div class="flex items-center justify-end space-x-3 pt-2">
         <button onclick="TrustBridgeApp.closeSubmitModal()" class="btn-secondary text-xs">Cancel</button>
-        <button onclick="TrustBridgeApp.executeSubmitEvidence()" class="btn-primary text-xs">
+        <button onclick="TrustBridgeApp.executeSubmitEvidence()" class="btn-accent text-xs">
           <span>Submit for Verification</span>
           <span>→</span>
         </button>
@@ -1018,14 +1135,14 @@
   </div>
 
   <!-- FOOTER -->
-  <footer class="w-full bg-[#FAFAFA] hairline-t py-8 px-6 mt-16 text-xs text-slate-500 font-mono">
+  <footer class="w-full bg-[#F3F1EC] hairline-t py-8 px-6 mt-16 text-xs text-[#82858F] font-mono">
     <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
       <div>
-        <span>TrustBridge Core v0.2.0 • Programmable Escrow Layer for International Freelancers</span>
+        <span>TrustBridge Protocol • Programmable Escrow Layer for International Freelancers</span>
       </div>
       <div class="flex items-center space-x-6">
         <span>FastAPI + SQLite WAL</span>
-        <span>PayPal Sandbox</span>
+        <span>PayPal Dual-Custody Sandbox</span>
         <span>Ollama llama3.2:3b</span>
       </div>
     </div>

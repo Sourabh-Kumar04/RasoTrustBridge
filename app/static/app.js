@@ -19,6 +19,44 @@ const TrustBridgeApp = {
     unreadCount: 0,
   },
 
+  currentFlowStep: 1,
+  flowTimer: null,
+
+  initFlowAnimation() {
+    if (this.flowTimer) clearInterval(this.flowTimer);
+    this.flowTimer = setInterval(() => {
+      const nextStep = (this.currentFlowStep % 4) + 1;
+      this.switchFlowStep(nextStep);
+    }, 3500);
+  },
+
+  switchFlowStep(stepNum) {
+    this.currentFlowStep = stepNum;
+    for (let i = 1; i <= 4; i++) {
+      const node = document.getElementById(`flow-node-${i}`);
+      if (!node) continue;
+      const numSpan = node.querySelector('.flow-step-num');
+      const stageSpan = node.querySelector('span[class*="tracking-wider"]');
+      if (i === stepNum) {
+        node.classList.add('active-step');
+        if (numSpan) {
+          numSpan.className = 'flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#111215] text-[#FFFFFF]';
+        }
+        if (stageSpan) {
+          stageSpan.className = 'font-mono text-[10px] text-[#C2410C] font-semibold uppercase tracking-wider';
+        }
+      } else {
+        node.classList.remove('active-step');
+        if (numSpan) {
+          numSpan.className = 'flow-step-num font-mono text-xs w-6 h-6 flex items-center justify-center rounded-[2px] bg-[#F3F1EC] text-[#4A4D55]';
+        }
+        if (stageSpan) {
+          stageSpan.className = 'font-mono text-[10px] text-[#82858F] font-semibold uppercase tracking-wider';
+        }
+      }
+    }
+  },
+
   // ---------------------------------------------------------------------------
   // INITIALIZATION & ROUTING
   // ---------------------------------------------------------------------------
@@ -69,31 +107,36 @@ const TrustBridgeApp = {
 
     // Reset active nav styles
     document.querySelectorAll('.nav-link').forEach(link => {
-      link.classList.remove('text-slate-950', 'border-slate-900');
-      link.classList.add('text-slate-500', 'border-transparent');
+      link.classList.remove('text-[#111215]', 'border-[#111215]', 'text-slate-950', 'border-slate-900');
+      link.classList.add('text-[#82858F]', 'border-transparent', 'text-slate-500');
     });
 
     if (hash === '#/' || hash === '#' || !hash) {
       document.getElementById('view-landing')?.classList.remove('hidden');
       this.setActiveNav('nav-landing');
-    } else if (hash.startsWith('#/dashboard')) {
-      document.getElementById('view-dashboard')?.classList.remove('hidden');
-      this.setActiveNav('nav-dashboard');
-      this.refreshDashboard();
-    } else if (hash.startsWith('#/negotiate')) {
-      document.getElementById('view-negotiate')?.classList.remove('hidden');
-      this.setActiveNav('nav-negotiate');
-      this.loadRecentNegotiationIfAvailable();
-    } else if (hash.startsWith('#/builder')) {
-      document.getElementById('view-builder')?.classList.remove('hidden');
-      this.setActiveNav('nav-builder');
-    } else if (hash.startsWith('#/contracts/')) {
-      const contractId = hash.replace('#/contracts/', '');
-      document.getElementById('view-contract-detail')?.classList.remove('hidden');
-      this.loadContractDetail(contractId);
+      this.initFlowAnimation();
     } else {
-      document.getElementById('view-landing')?.classList.remove('hidden');
-      this.setActiveNav('nav-landing');
+      if (this.flowTimer) clearInterval(this.flowTimer);
+      if (hash.startsWith('#/dashboard')) {
+        document.getElementById('view-dashboard')?.classList.remove('hidden');
+        this.setActiveNav('nav-dashboard');
+        this.refreshDashboard();
+      } else if (hash.startsWith('#/negotiate')) {
+        document.getElementById('view-negotiate')?.classList.remove('hidden');
+        this.setActiveNav('nav-negotiate');
+        this.loadRecentNegotiationIfAvailable(hash.includes('results'));
+      } else if (hash.startsWith('#/builder')) {
+        document.getElementById('view-builder')?.classList.remove('hidden');
+        this.setActiveNav('nav-builder');
+      } else if (hash.startsWith('#/contracts/')) {
+        const contractId = hash.replace('#/contracts/', '');
+        document.getElementById('view-contract-detail')?.classList.remove('hidden');
+        this.loadContractDetail(contractId);
+      } else {
+        document.getElementById('view-landing')?.classList.remove('hidden');
+        this.setActiveNav('nav-landing');
+        this.initFlowAnimation();
+      }
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -102,8 +145,8 @@ const TrustBridgeApp = {
   setActiveNav(id) {
     const el = document.getElementById(id);
     if (el) {
-      el.classList.remove('text-slate-500', 'border-transparent');
-      el.classList.add('text-slate-950', 'border-slate-900');
+      el.classList.remove('text-[#82858F]', 'border-transparent', 'text-slate-500');
+      el.classList.add('text-[#111215]', 'border-[#111215]');
     }
   },
 
@@ -504,7 +547,7 @@ const TrustBridgeApp = {
     if (!this.state.token) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="text-center py-16 text-slate-500 font-mono text-xs">
+          <td colspan="7" class="text-center py-16 text-[#82858F] font-mono text-xs">
             Sign in to view your personalized portfolio contracts and escrow status.
             <div class="pt-4 flex items-center justify-center space-x-3">
               <button onclick="TrustBridgeApp.openAuthModal('login')" class="btn-primary text-xs py-1.5 px-4">Sign In</button>
@@ -519,7 +562,7 @@ const TrustBridgeApp = {
     if (contracts.length === 0) {
       tbody.innerHTML = `
         <tr>
-          <td colspan="7" class="text-center py-16 text-slate-400 font-mono text-xs">
+          <td colspan="7" class="text-center py-16 text-[#82858F] font-mono text-xs">
             No escrow contracts registered yet. Launch an AI negotiation or create a contract from a brief.
           </td>
         </tr>
@@ -538,29 +581,43 @@ const TrustBridgeApp = {
       if (c.status === 'COMPLETED') badgeClass = 'badge-verified';
       if (c.status === 'DISPUTED') badgeClass = 'badge-disputed';
 
+      // One clear high-impact action CTA per contract
+      let actionCta = `<a href="#/contracts/${c.id}" class="btn-secondary text-xs">Inspect Dossier →</a>`;
+      if (c.status === 'DRAFT') {
+        actionCta = `<a href="#/contracts/${c.id}" class="btn-accent text-xs">Fund Escrow →</a>`;
+      } else if (c.status === 'ACTIVE') {
+        const hasVerified = (c.milestones || []).some(m => m.status === 'VERIFIED');
+        const hasSubmitted = (c.milestones || []).some(m => m.status === 'SUBMITTED');
+        if (hasVerified) {
+          actionCta = `<a href="#/contracts/${c.id}" class="btn-primary text-xs bg-[#14532D] border-[#14532D]">Release Payout →</a>`;
+        } else if (hasSubmitted) {
+          actionCta = `<a href="#/contracts/${c.id}" class="btn-primary text-xs">Verify Evidence →</a>`;
+        }
+      }
+
       return `
         <tr>
           <td>
-            <div class="font-medium text-slate-900">${this.escapeHtml(c.title)}</div>
-            <div class="text-xs text-slate-400 font-mono truncate max-w-xs">${this.escapeHtml(c.id)}</div>
+            <div class="font-medium text-[#111215] font-serif text-base">${this.escapeHtml(c.title)}</div>
+            <div class="text-[11px] text-[#82858F] font-mono truncate max-w-xs">${this.escapeHtml(c.id)}</div>
           </td>
           <td>
-            <div class="text-xs text-slate-900">${this.escapeHtml(c.client_name)} <span class="font-mono text-slate-400">(${c.client_country})</span></div>
-            <div class="text-xs text-slate-500">→ ${this.escapeHtml(c.developer_name)} <span class="font-mono text-slate-400">(${c.developer_country})</span></div>
+            <div class="text-xs text-[#111215]">${this.escapeHtml(c.client_name)} <span class="font-mono text-[#82858F]">(${c.client_country})</span></div>
+            <div class="text-xs text-[#4A4D55]">→ ${this.escapeHtml(c.developer_name)} <span class="font-mono text-[#82858F]">(${c.developer_country})</span></div>
           </td>
           <td class="font-mono">
-            <div class="font-semibold text-slate-900">$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}</div>
-            <div class="text-xs text-slate-400">≈ ${c.payout_currency} ${payoutVal}</div>
+            <div class="font-semibold text-[#111215]">$${c.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency}</div>
+            <div class="text-xs text-[#82858F]">≈ ${c.payout_currency} ${payoutVal}</div>
           </td>
           <td class="font-mono text-xs">
-            <span class="text-slate-700">${c.fx_strategy}</span>
-            <div class="text-slate-400">@ ${rate.toFixed(2)}</div>
+            <span class="text-[#111215]">${c.fx_strategy}</span>
+            <div class="text-[#82858F]">@ ${rate.toFixed(2)}</div>
           </td>
           <td>
             <div class="flex items-center space-x-2">
-              <span class="font-mono text-xs font-medium text-slate-800">${verifiedMilestones}/${totalMilestones}</span>
-              <div class="w-16 h-1.5 bg-slate-100 rounded overflow-hidden">
-                <div class="h-full bg-slate-900" style="width: ${totalMilestones ? (verifiedMilestones/totalMilestones)*100 : 0}%"></div>
+              <span class="font-mono text-xs font-medium text-[#111215]">${verifiedMilestones}/${totalMilestones}</span>
+              <div class="w-16 h-1.5 bg-[#E2DFD8] rounded-[1px] overflow-hidden">
+                <div class="h-full bg-[#111215]" style="width: ${totalMilestones ? (verifiedMilestones/totalMilestones)*100 : 0}%"></div>
               </div>
             </div>
           </td>
@@ -568,7 +625,7 @@ const TrustBridgeApp = {
             <span class="badge ${badgeClass}">${c.status}</span>
           </td>
           <td class="text-right">
-            <a href="#/contracts/${c.id}" class="btn-subtle text-xs hairline-all">Inspect →</a>
+            ${actionCta}
           </td>
         </tr>
       `;
@@ -578,16 +635,16 @@ const TrustBridgeApp = {
   // ---------------------------------------------------------------------------
   // AGENT-TO-AGENT NEGOTIATOR
   // ---------------------------------------------------------------------------
-  async loadRecentNegotiationIfAvailable() {
+  async loadRecentNegotiationIfAvailable(shouldScroll = false) {
     if (this.state.lastNegotiation) {
-      this.renderNegotiationResults(this.state.lastNegotiation);
+      this.renderNegotiationResults(this.state.lastNegotiation, shouldScroll);
       return;
     }
     try {
       const list = await this.apiRequest('/negotiate');
       if (list && list.length > 0) {
         this.state.lastNegotiation = list[0];
-        this.renderNegotiationResults(list[0]);
+        this.renderNegotiationResults(list[0], shouldScroll);
       }
     } catch (e) {
       // ignore
@@ -678,7 +735,7 @@ const TrustBridgeApp = {
     try {
       const response = await this.apiRequest('/negotiate', 'POST', payload);
       this.state.lastNegotiation = response;
-      this.renderNegotiationResults(response);
+      this.renderNegotiationResults(response, true);
       if (response.status === 'no_deal') {
         this.showToast('Negotiation concluded: NO DEAL (bounds exceeded).', 'warning');
       } else {
@@ -692,12 +749,12 @@ const TrustBridgeApp = {
     }
   },
 
-  renderNegotiationResults(data) {
+  renderNegotiationResults(data, autoScroll = false) {
     const container = document.getElementById('negotiation-results-container');
     container.classList.remove('hidden');
 
-    document.getElementById('neg-rounds-count').textContent = `${data.total_rounds} Rounds Completed`;
-    document.getElementById('neg-model-used-badge').textContent = `ENGINE: ${data.model_used}`;
+    document.getElementById('neg-rounds-count').textContent = `${data.total_rounds} Deliberation Rounds Completed`;
+    document.getElementById('neg-model-used-badge').textContent = `ARBITRATION ENGINE: ${data.model_used}`;
 
     // Render Active Enforced Bounds Card above transcript
     if (data.bounds) {
@@ -711,7 +768,7 @@ const TrustBridgeApp = {
       const gapEl = document.getElementById('neg-bound-gap');
       if (gapEl) gapEl.textContent = `${b.walk_away_gap_pct.toFixed(1)}%`;
       const roundsEl = document.getElementById('neg-bound-rounds');
-      if (roundsEl) roundsEl.textContent = `${b.max_rounds} Rounds`;
+      if (roundsEl) roundsEl.textContent = `${b.max_rounds} Max Rounds`;
       const stagEl = document.getElementById('neg-bound-stagnation');
       if (stagEl) stagEl.textContent = `Stagnation: ${Math.min(3, b.max_rounds)} rds`;
     }
@@ -724,7 +781,7 @@ const TrustBridgeApp = {
       if (noDealBanner) {
         noDealBanner.classList.remove('hidden');
         document.getElementById('neg-no-deal-reason').textContent =
-          data.termination_reason || 'Terms are irreconcilable under active bounds.';
+          data.termination_reason || 'Bilateral deliberation terminated: spread exceeded walk-away policy threshold.';
       }
     } else if (data.agreed_terms) {
       if (noDealBanner) noDealBanner.classList.add('hidden');
@@ -743,60 +800,71 @@ const TrustBridgeApp = {
       }
     }
 
-    // Render Transcript Feed
+    // Render Transcript Feed with Cinematic Staggered Reveal and Agent Identities
     const feed = document.getElementById('neg-transcript-feed');
-    feed.innerHTML = (data.rounds || []).map(round => {
+    feed.innerHTML = (data.rounds || []).map((round, rIdx) => {
       const b = round.buyer_turn;
       const s = round.seller_turn;
 
       return `
-        <div class="space-y-4 hairline-b pb-8">
-          <div class="flex items-center justify-between font-mono text-xs text-slate-400">
-            <span>ROUND 0${round.round_number} DELIBERATION</span>
-            <span class="text-slate-600 font-medium">Price Spread: $${round.price_gap.toFixed(2)} (${round.status.toUpperCase()})</span>
+        <div class="space-y-4 hairline-b pb-8 fade-in-turn" style="animation-delay: ${rIdx * 0.08}s;">
+          <div class="flex items-center justify-between font-mono text-xs text-[#82858F]">
+            <div class="flex items-center space-x-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-[#111215]"></span>
+              <span class="font-semibold text-[#111215]">ROUND 0${round.round_number} DELIBERATION</span>
+            </div>
+            <span class="font-medium px-2 py-0.5 rounded-[2px] bg-[#F3F1EC] text-[#111215]">Spread: $${round.price_gap.toFixed(2)} (${round.status.toUpperCase()})</span>
           </div>
 
           <!-- BUYER TURN -->
-          <div class="hairline-all p-5 bg-white space-y-3">
-            <div class="flex items-center justify-between">
+          <div class="hairline-all p-5 bg-[#FFFFFF] space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 bg-blue-600 rounded-sm"></span>
-                <span class="font-semibold text-xs text-slate-900">${this.escapeHtml(b.sender_label)}</span>
+                <span class="w-2 h-2 bg-[#111215] rounded-[1px]"></span>
+                <span class="font-mono text-xs font-semibold text-[#111215] uppercase tracking-wider">${this.escapeHtml(b.sender_label)}</span>
+                <span class="font-mono text-[10px] text-[#82858F]">• Buyer Agent</span>
               </div>
               <div class="flex items-center space-x-3 font-mono text-xs">
-                <span class="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 border border-blue-200 rounded">$${b.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
-                <span class="text-slate-500">${b.offer.timeline_days} Days</span>
+                <span class="font-semibold text-[#111215] bg-[#F3F1EC] px-2.5 py-1 hairline-all rounded-[2px]">$${b.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+                <span class="text-[#82858F]">${b.offer.timeline_days} Days Horizon</span>
               </div>
             </div>
 
-            <p class="text-sm text-slate-700 leading-relaxed">${this.escapeHtml(b.message)}</p>
+            <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(b.message)}</p>
 
-            <details class="text-xs text-slate-500 pt-2 hairline-t">
-              <summary class="cursor-pointer font-mono hover:text-slate-800 transition">Agent Internal Reasoning & Strategy</summary>
-              <div class="p-3 mt-2 bg-[#FAFAFA] hairline-all font-mono text-[11px] text-slate-600 leading-normal">
+            <details class="text-xs text-[#82858F] pt-2 hairline-t">
+              <summary class="cursor-pointer font-mono hover:text-[#111215] transition flex items-center space-x-1.5">
+                <span>§</span>
+                <span>Agent Strategic Reasoning & Boundary Check</span>
+              </summary>
+              <div class="p-3 mt-2 bg-[#F9F8F6] hairline-all font-mono text-[11px] text-[#4A4D55] leading-normal rounded-[2px]">
                 ${this.escapeHtml(b.reasoning)}
               </div>
             </details>
           </div>
 
           <!-- SELLER TURN -->
-          <div class="hairline-all p-5 bg-white space-y-3">
-            <div class="flex items-center justify-between">
+          <div class="hairline-all p-5 bg-[#FFFFFF] space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div class="flex items-center space-x-2">
-                <span class="w-2.5 h-2.5 bg-emerald-600 rounded-sm"></span>
-                <span class="font-semibold text-xs text-slate-900">${this.escapeHtml(s.sender_label)}</span>
+                <span class="w-2 h-2 bg-[#C2410C] rounded-[1px]"></span>
+                <span class="font-mono text-xs font-semibold text-[#C2410C] uppercase tracking-wider">${this.escapeHtml(s.sender_label)}</span>
+                <span class="font-mono text-[10px] text-[#82858F]">• Seller Agent</span>
               </div>
               <div class="flex items-center space-x-3 font-mono text-xs">
-                <span class="font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 border border-emerald-200 rounded">$${s.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
-                <span class="text-slate-500">${s.offer.timeline_days} Days</span>
+                <span class="font-semibold text-[#C2410C] bg-[#FFF7ED] border border-[#FDBA74] px-2.5 py-1 rounded-[2px]">$${s.offer.price.toLocaleString('en-US', { minimumFractionDigits: 2 })} USD</span>
+                <span class="text-[#82858F]">${s.offer.timeline_days} Days Horizon</span>
               </div>
             </div>
 
-            <p class="text-sm text-slate-700 leading-relaxed">${this.escapeHtml(s.message)}</p>
+            <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(s.message)}</p>
 
-            <details class="text-xs text-slate-500 pt-2 hairline-t">
-              <summary class="cursor-pointer font-mono hover:text-slate-800 transition">Agent Internal Reasoning & Strategy</summary>
-              <div class="p-3 mt-2 bg-[#FAFAFA] hairline-all font-mono text-[11px] text-slate-600 leading-normal">
+            <details class="text-xs text-[#82858F] pt-2 hairline-t">
+              <summary class="cursor-pointer font-mono hover:text-[#111215] transition flex items-center space-x-1.5">
+                <span>§</span>
+                <span>Agent Strategic Reasoning & Cost Margin Check</span>
+              </summary>
+              <div class="p-3 mt-2 bg-[#F9F8F6] hairline-all font-mono text-[11px] text-[#4A4D55] leading-normal rounded-[2px]">
                 ${this.escapeHtml(s.reasoning)}
               </div>
             </details>
@@ -805,7 +873,9 @@ const TrustBridgeApp = {
       `;
     }).join('');
 
-    container.scrollIntoView({ behavior: 'smooth' });
+    if (autoScroll) {
+      container.scrollIntoView({ behavior: 'smooth' });
+    }
   },
 
   // ---------------------------------------------------------------------------
@@ -846,37 +916,37 @@ const TrustBridgeApp = {
     const container = document.getElementById('builder-preview-container');
     container.classList.remove('hidden');
 
-    document.getElementById('preview-contract-title').textContent = draft.suggested_title;
-    document.getElementById('preview-total-amount').textContent = `$${draft.suggested_total_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${payload.base_currency}`;
+    document.getElementById('preview-contract-title').textContent = draft.suggested_title || draft.title || 'Enterprise Payment Integration';
+    document.getElementById('preview-total-amount').textContent = `$${(draft.suggested_total_amount || payload.budget || 3500).toLocaleString('en-US', { minimumFractionDigits: 2 })} ${payload.base_currency}`;
     document.getElementById('preview-fx-strategy').textContent = draft.recommended_fx_strategy;
     document.getElementById('preview-generator-source').textContent = draft.generator_source || 'AI Engine';
     document.getElementById('preview-dispute-summary').textContent = draft.dispute_protocol_summary;
 
     const list = document.getElementById('preview-milestones-list');
     list.innerHTML = (draft.milestones || []).map((m, idx) => `
-      <div class="p-6 space-y-3">
-        <div class="flex items-center justify-between">
+      <div class="p-6 space-y-4 bg-[#FFFFFF] hairline-all rounded-[2px]">
+        <div class="flex items-center justify-between hairline-b pb-3">
           <div class="flex items-center space-x-3">
-            <span class="w-6 h-6 rounded-sm bg-slate-900 text-white font-mono text-xs flex items-center justify-center font-bold">
-              ${m.order_index || idx + 1}
+            <span class="w-6 h-6 rounded-[2px] bg-[#111215] text-white font-mono text-xs flex items-center justify-center font-bold">
+              0${m.order_index || idx + 1}
             </span>
-            <span class="font-semibold text-slate-900">${this.escapeHtml(m.title)}</span>
+            <span class="font-serif font-medium text-base text-[#111215]">${this.escapeHtml(m.title)}</span>
           </div>
-          <div class="font-mono text-sm font-semibold text-slate-900">
-            $${m.estimated_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} (${(m.amount_percentage * 100).toFixed(0)}%)
+          <div class="font-mono text-sm font-semibold text-[#111215]">
+            $${m.estimated_amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} <span class="text-xs text-[#82858F] font-normal">(${(m.amount_percentage * 100).toFixed(0)}%)</span>
           </div>
         </div>
 
-        <p class="text-sm text-slate-600 leading-relaxed">${this.escapeHtml(m.description)}</p>
+        <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(m.description)}</p>
 
         <div class="space-y-1.5 pt-2">
-          <div class="font-mono text-xs text-slate-400 uppercase">Verifiable Acceptance Criteria:</div>
-          <ul class="space-y-1 text-xs text-slate-700">
+          <div class="font-mono text-[11px] text-[#82858F] uppercase tracking-wider">Verifiable Acceptance Criteria:</div>
+          <ul class="space-y-1 text-xs text-[#111215]">
             ${(m.acceptance_criteria || []).map(crit => `
               <li class="flex items-center space-x-2">
-                <span class="text-emerald-600 font-mono">✓</span>
+                <span class="text-[#14532D] font-mono">✓</span>
                 <span>${this.escapeHtml(crit.description)}</span>
-                <span class="font-mono text-[10px] text-slate-400 uppercase">[${crit.verification_method}]</span>
+                <span class="font-mono text-[10px] text-[#82858F] uppercase px-1.5 py-0.5 bg-[#F3F1EC] rounded-[2px]">[${crit.verification_method}]</span>
               </li>
             `).join('')}
           </ul>
@@ -884,7 +954,9 @@ const TrustBridgeApp = {
       </div>
     `).join('');
 
-    container.scrollIntoView({ behavior: 'smooth' });
+    if (autoScroll) {
+      container.scrollIntoView({ behavior: 'smooth' });
+    }
   },
 
   async confirmAndDeployContract() {
@@ -972,15 +1044,15 @@ const TrustBridgeApp = {
     actionBar.innerHTML = '';
     if (c.status === 'DRAFT') {
       const fundBtn = document.createElement('button');
-      fundBtn.className = 'btn-primary text-xs';
+      fundBtn.className = 'btn-accent text-xs';
       fundBtn.innerHTML = `<span>Fund Contract via PayPal Sandbox</span> <span>→</span>`;
       fundBtn.onclick = () => this.fundContractWithPayPal(c.id, c.total_amount);
       actionBar.appendChild(fundBtn);
     }
 
-    // Milestones timeline
+    // Milestones forensic exhibits narrative
     const list = document.getElementById('detail-milestones-list');
-    list.innerHTML = (c.milestones || []).map(m => {
+    list.innerHTML = (c.milestones || []).map((m, idx) => {
       let mBadgeClass = 'badge-draft';
       if (m.status === 'FUNDED') mBadgeClass = 'badge-active';
       if (m.status === 'SUBMITTED') mBadgeClass = 'badge-draft';
@@ -991,60 +1063,65 @@ const TrustBridgeApp = {
       const payoutAmt = m.payout_amount ? `${c.payout_currency} ${m.payout_amount.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : `≈ ${c.payout_currency} ${(m.amount * rate).toFixed(2)}`;
 
       return `
-        <div class="p-6 space-y-4">
-          <div class="flex flex-col md:flex-row md:items-center justify-between gap-2">
+        <div class="p-8 space-y-5 bg-[#FFFFFF]">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 hairline-b pb-4">
             <div class="flex items-center space-x-3">
-              <span class="w-6 h-6 rounded-sm bg-slate-900 text-white font-mono text-xs flex items-center justify-center font-bold">
-                ${m.order_index}
+              <span class="w-7 h-7 rounded-[2px] bg-[#111215] text-[#FFFFFF] font-mono text-xs flex items-center justify-center font-bold">
+                0${m.order_index}
               </span>
-              <span class="font-semibold text-slate-900">${this.escapeHtml(m.title)}</span>
-              <span class="badge ${mBadgeClass}">${m.status}</span>
+              <div>
+                <div class="font-mono text-[10px] text-[#82858F] uppercase tracking-wider">EXHIBIT 0${m.order_index}</div>
+                <span class="font-serif font-medium text-lg text-[#111215]">${this.escapeHtml(m.title)}</span>
+              </div>
             </div>
-            <div class="font-mono text-sm font-semibold text-slate-900">
-              $${m.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} <span class="text-xs text-slate-400">(${payoutAmt})</span>
+            <div class="flex items-center space-x-3">
+              <span class="badge ${mBadgeClass}">${m.status}</span>
+              <div class="font-mono text-sm font-semibold text-[#111215]">
+                $${m.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })} ${c.base_currency} <span class="text-xs text-[#82858F] font-normal">(${payoutAmt})</span>
+              </div>
             </div>
           </div>
 
-          <p class="text-sm text-slate-600 leading-relaxed">${this.escapeHtml(m.description)}</p>
+          <p class="text-sm text-[#4A4D55] leading-relaxed font-light">${this.escapeHtml(m.description)}</p>
 
-          <!-- ACCEPTANCE CRITERIA -->
-          <div class="space-y-1.5 pt-1">
-            <div class="font-mono text-xs text-slate-400 uppercase">Verification Criteria:</div>
-            <ul class="space-y-1 text-xs text-slate-700">
+          <!-- ACCEPTANCE CRITERIA FORENSIC AUDIT SPEC -->
+          <div class="space-y-2 pt-1">
+            <div class="font-mono text-[11px] text-[#82858F] uppercase tracking-wider">Forensic Acceptance Criteria:</div>
+            <ul class="space-y-1.5 text-xs text-[#111215]">
               ${(m.acceptance_criteria || []).map(crit => `
                 <li class="flex items-center space-x-2">
-                  <span class="text-emerald-600 font-mono">✓</span>
+                  <span class="text-[#14532D] font-mono">✓</span>
                   <span>${this.escapeHtml(crit.description)}</span>
-                  <span class="font-mono text-[10px] text-slate-400 uppercase">[${crit.verification_method}]</span>
+                  <span class="font-mono text-[10px] text-[#82858F] uppercase px-1.5 py-0.5 bg-[#F3F1EC] rounded-[2px]">[${crit.verification_method}]</span>
                 </li>
               `).join('')}
             </ul>
           </div>
 
-          <!-- SUBMITTED EVIDENCE DOSSIER (IF ANY) -->
+          <!-- SUBMITTED EVIDENCE EXHIBIT (IF ANY) -->
           ${m.evidence_url ? `
-            <div class="hairline-all p-4 bg-[#FAFAFA] space-y-2 text-xs">
+            <div class="hairline-all p-5 bg-[#F9F8F6] space-y-2.5 text-xs rounded-[2px]">
               <div class="flex items-center justify-between">
-                <span class="font-mono text-slate-500 uppercase">Submitted Evidence Dossier</span>
-                <span class="font-mono text-emerald-700 font-semibold">SCORE: ${((m.verification_score || 1.0) * 100).toFixed(0)}% VERIFIED</span>
+                <span class="font-mono text-[#82858F] uppercase text-[10px] tracking-wider">EXHIBIT ARTIFACT DOSSIER</span>
+                <span class="font-mono text-[#14532D] font-semibold bg-[#F0FDF4] px-2 py-0.5 rounded-[2px] border border-[#BBF7D0]">CRYPTOGRAPHIC VERIFICATION SCORE: ${((m.verification_score || 1.0) * 100).toFixed(0)}%</span>
               </div>
-              <div class="font-mono text-slate-700 break-all">
-                PR / Artifact: <a href="${m.evidence_url}" target="_blank" class="text-blue-600 underline">${m.evidence_url}</a>
+              <div class="font-mono text-[#111215] break-all">
+                PR / Artifact: <a href="${m.evidence_url}" target="_blank" class="text-[#C2410C] underline hover:text-[#9A3412]">${m.evidence_url}</a>
               </div>
-              ${m.evidence_notes ? `<div class="text-slate-600">${this.escapeHtml(m.evidence_notes)}</div>` : ''}
+              ${m.evidence_notes ? `<div class="text-[#4A4D55] text-xs">${this.escapeHtml(m.evidence_notes)}</div>` : ''}
               ${m.paypal_payout_batch_id ? `
-                <div class="font-mono text-purple-700 text-[11px] pt-1">
+                <div class="font-mono text-[#6B21A8] text-[11px] pt-1">
                   PAYPAL PAYOUT BATCH: ${m.paypal_payout_batch_id} (Captured)
                 </div>
               ` : ''}
             </div>
           ` : ''}
 
-          <!-- ACTION BUTTONS PER MILESTONE -->
+          <!-- ACTION BUTTONS PER MILESTONE (ONE PRIMARY CTA) -->
           <div class="flex flex-wrap items-center gap-3 pt-2">
             ${(m.status === 'FUNDED' || m.status === 'DRAFT') ? `
-              <button onclick="TrustBridgeApp.openSubmitModal('${m.id}')" class="btn-primary text-xs">
-                <span>Submit Deliverable</span>
+              <button onclick="TrustBridgeApp.openSubmitModal('${m.id}')" class="btn-accent text-xs">
+                <span>Submit Deliverable Artifact</span>
                 <span>→</span>
               </button>
             ` : ''}
@@ -1057,14 +1134,14 @@ const TrustBridgeApp = {
             ` : ''}
 
             ${m.status === 'VERIFIED' ? `
-              <button onclick="TrustBridgeApp.releaseMilestone('${m.id}')" class="btn-primary text-xs bg-emerald-700 border-emerald-700 hover:bg-emerald-800">
+              <button onclick="TrustBridgeApp.releaseMilestone('${m.id}')" class="btn-primary text-xs bg-[#14532D] border-[#14532D] hover:bg-[#0F3D20]">
                 <span>Approve & Release Funds</span>
                 <span>→</span>
               </button>
             ` : ''}
 
             ${(m.status !== 'RELEASED' && m.status !== 'DISPUTED') ? `
-              <button onclick="TrustBridgeApp.disputeMilestone('${m.id}')" class="btn-secondary text-xs text-red-600 hover:text-red-700">
+              <button onclick="TrustBridgeApp.disputeMilestone('${m.id}')" class="btn-subtle text-xs text-[#991B1B] hover:bg-[#FEF2F2]">
                 <span>Raise Dispute</span>
               </button>
             ` : ''}
@@ -1078,14 +1155,14 @@ const TrustBridgeApp = {
     if (c.audit_logs && c.audit_logs.length > 0) {
       auditTbody.innerHTML = c.audit_logs.map(log => `
         <tr>
-          <td class="font-mono text-xs text-slate-500">${new Date(log.timestamp).toLocaleString()}</td>
-          <td class="font-mono text-xs text-slate-700 font-medium">${log.actor_role}</td>
-          <td><span class="font-mono text-xs text-slate-900 font-semibold">${log.action}</span></td>
-          <td class="text-xs text-slate-600">${this.escapeHtml(log.description)}</td>
+          <td class="font-mono text-xs text-[#82858F]">${new Date(log.created_at).toLocaleString()}</td>
+          <td class="font-mono text-xs font-medium text-[#111215]">${this.escapeHtml(log.actor_role)}</td>
+          <td><span class="badge badge-draft">${this.escapeHtml(log.action)}</span></td>
+          <td class="text-xs text-[#4A4D55] font-light">${this.escapeHtml(log.description)}</td>
         </tr>
       `).join('');
     } else {
-      auditTbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-slate-400 font-mono text-xs">No audit events recorded yet</td></tr>`;
+      auditTbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-[#82858F] font-mono text-xs">No audit events recorded</td></tr>`;
     }
   },
 
