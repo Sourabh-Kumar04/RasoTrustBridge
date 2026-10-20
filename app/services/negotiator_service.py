@@ -21,6 +21,7 @@ from app.schemas.negotiation import (
     NegotiationRoundSchema,
     AgentOfferSchema,
     AgreedTermsSchema,
+    NegotiationBoundsSchema,
 )
 from app.services.contract_service import contract_service
 from app.services.fx_service import fx_service
@@ -93,6 +94,20 @@ class NegotiatorService:
             except Exception:
                 pass
 
+        # Compute active user bounds summary
+        buyer_budget_extracted = self._extract_price(req.buyer_brief, default=3000.0)
+        buyer_cap_base = req.buyer_max_budget if req.buyer_max_budget is not None else buyer_budget_extracted
+        seller_floor_base = req.seller_min_price if req.seller_min_price is not None else 0.0
+        effective_cap = round(buyer_cap_base * (1.0 + req.max_over_budget_pct / 100.0), 2)
+        bounds_summary = NegotiationBoundsSchema(
+            buyer_max_budget=buyer_cap_base,
+            seller_min_price=seller_floor_base,
+            max_over_budget_pct=req.max_over_budget_pct,
+            effective_buyer_cap=effective_cap,
+            walk_away_gap_pct=req.walk_away_gap_pct,
+            max_rounds=req.max_rounds,
+        )
+
         response = NegotiationResponseSchema(
             id=negotiation_id,
             status=status,
@@ -101,6 +116,7 @@ class NegotiatorService:
             rounds=rounds,
             agreed_terms=agreed_terms,
             termination_reason=termination_reason,
+            bounds=bounds_summary,
             contract_id=contract_id,
             contract=created_contract,
             model_used=model_used,
@@ -142,6 +158,12 @@ class NegotiatorService:
         buyer_timeline = self._extract_timeline(req.buyer_brief, default=21)
         seller_timeline = self._extract_timeline(req.seller_brief, default=28)
 
+        # Active bounds configuration
+        has_buyer_cap = (req.buyer_max_budget is not None) or (req.max_over_budget_pct > 0.0)
+        buyer_cap_base = req.buyer_max_budget if req.buyer_max_budget is not None else buyer_budget
+        effective_buyer_cap = round(buyer_cap_base * (1.0 + req.max_over_budget_pct / 100.0), 2)
+        effective_seller_floor = req.seller_min_price if req.seller_min_price is not None else None
+
         rounds: List[NegotiationRoundSchema] = []
         transcript: List[NegotiationMessageSchema] = []
         agreed_terms: Optional[AgreedTermsSchema] = None
@@ -173,17 +195,22 @@ class NegotiatorService:
                 client_trust=client_trust,
                 developer_trust=developer_trust,
                 model_used=model_used,
+                has_buyer_cap=has_buyer_cap,
+                effective_buyer_cap=effective_buyer_cap,
+                effective_seller_floor=effective_seller_floor,
             )
 
         # Multi-Round Mode (with Walk-Away / NO_DEAL checks)
         total_rounds = req.max_rounds
         previous_gap = None
         no_movement_streak = 0
+        stagnation_limit = min(3, total_rounds)
+        stagnation_streak = max(1, stagnation_limit - 1)
 
         for r_num in range(1, total_rounds + 1):
             is_final_round = (r_num == total_rounds)
 
-            # Buyer Turn
+            # Buyer Turn (clamped to effective_buyer_cap if active)
             buyer_msg = self._generate_rule_based_buyer_turn(
                 round_num=r_num,
                 total_rounds=total_rounds,
@@ -196,10 +223,12 @@ class NegotiatorService:
                 client_trust=client_trust,
                 developer_trust=developer_trust,
                 previous_seller_msg=rounds[-1].seller_turn if rounds else None,
+                has_buyer_cap=has_buyer_cap,
+                effective_buyer_cap=effective_buyer_cap,
             )
             transcript.append(buyer_msg)
 
-            # Seller Turn
+            # Seller Turn (floored to effective_seller_floor if active)
             seller_msg = self._generate_rule_based_seller_turn(
                 round_num=r_num,
                 total_rounds=total_rounds,
@@ -212,6 +241,7 @@ class NegotiatorService:
                 client_trust=client_trust,
                 developer_trust=developer_trust,
                 buyer_msg=buyer_msg,
+                effective_seller_floor=effective_seller_floor,
             )
             transcript.append(seller_msg)
 
@@ -225,9 +255,9 @@ class NegotiatorService:
                 no_movement_streak = 0
             previous_gap = price_gap
 
-            # Walk-Away Check 1: 3 rounds with no movement
-            if no_movement_streak >= 2:  # 3 consecutive evaluations without progress
-                termination_reason = "3 rounds with no movement: parties unable to bridge concession deadlock"
+            # Walk-Away Check 1: User-set stagnation limit (min(3, max_rounds) stagnant rounds)
+            if no_movement_streak >= stagnation_streak:
+                termination_reason = f"{stagnation_limit} rounds with no movement: parties unable to bridge concession deadlock"
                 walk_away_msg = self._generate_no_deal_turn(r_num, buyer_budget, seller_ask, req.base_currency, termination_reason)
                 transcript.append(walk_away_msg)
                 rounds.append(NegotiationRoundSchema(
@@ -239,9 +269,10 @@ class NegotiatorService:
                 ))
                 return rounds, transcript, None, model_used, termination_reason
 
-            # Walk-Away Check 2: Gap > 40% on price in final round or persistent irreconcilability
-            if is_final_round and gap_pct > 40.0:
-                termination_reason = f"Price gap of {gap_pct:.1f}% exceeds 40% tolerance threshold: terms irreconcilable"
+            # Walk-Away Check 2: Gap exceeds user-set walk_away_gap_pct tolerance threshold
+            if is_final_round and gap_pct > req.walk_away_gap_pct:
+                pct_str = f"{int(req.walk_away_gap_pct)}%" if req.walk_away_gap_pct == int(req.walk_away_gap_pct) else f"{req.walk_away_gap_pct:.1f}%"
+                termination_reason = f"Price gap of {gap_pct:.1f}% exceeds {pct_str} tolerance threshold: terms irreconcilable"
                 walk_away_msg = self._generate_no_deal_turn(r_num, buyer_budget, seller_ask, req.base_currency, termination_reason)
                 transcript.append(walk_away_msg)
                 rounds.append(NegotiationRoundSchema(
@@ -267,7 +298,20 @@ class NegotiatorService:
             rounds.append(round_obj)
 
             if is_final_round or round_status == "agreed":
+                # Hard cap check: if seller price exceeds buyer hard cap -> NO_DEAL
+                if has_buyer_cap and seller_msg.offer.price > effective_buyer_cap:
+                    termination_reason = f"seller price {seller_msg.offer.price} exceeds buyer hard cap {effective_buyer_cap}"
+                    walk_away_msg = self._generate_no_deal_turn(r_num, buyer_budget, seller_ask, req.base_currency, termination_reason)
+                    transcript.append(walk_away_msg)
+                    rounds[-1].status = "no_deal"
+                    return rounds, transcript, None, model_used, termination_reason
+
                 final_price = seller_msg.offer.price
+                if effective_seller_floor is not None:
+                    final_price = max(final_price, effective_seller_floor)
+                if has_buyer_cap:
+                    final_price = min(final_price, effective_buyer_cap)
+
                 final_timeline = seller_msg.offer.timeline_days
                 final_fx = seller_msg.offer.fx_strategy
                 milestones_list = self._build_agreed_milestones(
@@ -303,18 +347,21 @@ class NegotiatorService:
         client_trust: float,
         developer_trust: float,
         model_used: str,
+        has_buyer_cap: bool = False,
+        effective_buyer_cap: float = 0.0,
+        effective_seller_floor: Optional[float] = None,
     ) -> Tuple[List[NegotiationRoundSchema], List[NegotiationMessageSchema], Optional[AgreedTermsSchema], str, Optional[str]]:
         """
         Quick Mode: Term suggestion + One-round adjustment (Default).
         Directly addresses mentor critique of 'multi-round theater'.
+        Enforces user-defined hard caps, floors, and walk-away thresholds.
         """
         initial_gap_pct = ((seller_ask - buyer_budget) / buyer_budget * 100.0) if buyer_budget > 0 else 0.0
 
-        # Term suggestion by Buyer Agent
+        # Term suggestion by Buyer Agent (no hardcoded 1.08 stretch; clamped to effective cap if active)
         buyer_suggested_price = buyer_budget
-        if developer_trust >= 70:
-            # High trust premium: buyer stretches initial suggestion by up to 10%
-            buyer_suggested_price = round(buyer_budget * 1.08, 2)
+        if has_buyer_cap and effective_buyer_cap > 0:
+            buyer_suggested_price = min(buyer_suggested_price, effective_buyer_cap)
 
         buyer_offer = AgentOfferSchema(
             price=buyer_suggested_price,
@@ -346,8 +393,9 @@ class NegotiatorService:
             timestamp=datetime.utcnow(),
         )
 
-        # Walk-Away Check: if initial gap > 40% and cannot be bridged
-        if initial_gap_pct > 40.0:
+        # Walk-Away Check: if initial gap exceeds user-set threshold (default: 40%)
+        if initial_gap_pct > req.walk_away_gap_pct:
+            pct_str = f"{int(req.walk_away_gap_pct)}%" if req.walk_away_gap_pct == int(req.walk_away_gap_pct) else f"{req.walk_away_gap_pct:.1f}%"
             seller_offer = AgentOfferSchema(
                 price=seller_ask,
                 timeline_days=seller_timeline,
@@ -361,11 +409,11 @@ class NegotiatorService:
                 sender_label="Seller Agent (DevStudio AI)",
                 reasoning=(
                     f"Irreconcilable gap: Client budget ${buyer_budget:,.2f} vs Developer ask ${seller_ask:,.2f} "
-                    f"represents a {initial_gap_pct:.1f}% divergence (>40% limit). Walking away with NO_DEAL."
+                    f"represents a {initial_gap_pct:.1f}% divergence (>{pct_str} limit). Walking away with NO_DEAL."
                 ),
                 message=(
                     f"NO_DEAL: We cannot accept ${buyer_suggested_price:,.2f}. Our minimum viable threshold is "
-                    f"${seller_ask:,.2f} ({initial_gap_pct:.1f}% gap exceeds the 40% limit). We must terminate the negotiation."
+                    f"${seller_ask:,.2f} ({initial_gap_pct:.1f}% gap exceeds the {pct_str} limit). We must terminate the negotiation."
                 ),
                 offer=seller_offer,
                 timestamp=datetime.utcnow(),
@@ -377,10 +425,44 @@ class NegotiatorService:
                 price_gap=round(seller_ask - buyer_suggested_price, 2),
                 status="no_deal",
             )
-            return [round_obj], [buyer_msg, seller_msg], None, model_used, f"Price gap of {initial_gap_pct:.1f}% exceeds 40% walk-away threshold"
+            return [round_obj], [buyer_msg, seller_msg], None, model_used, f"Price gap of {initial_gap_pct:.1f}% exceeds {pct_str} walk-away threshold"
 
         # One-Round Adjustment by Seller Agent
         compromise_price = round((buyer_suggested_price + seller_ask) / 2, 2)
+        if effective_seller_floor is not None:
+            compromise_price = max(compromise_price, effective_seller_floor)
+
+        # Hard cap check: if seller's best price exceeds buyer's hard cap -> NO_DEAL
+        if has_buyer_cap and compromise_price > effective_buyer_cap:
+            termination_reason = f"seller price {compromise_price} exceeds buyer hard cap {effective_buyer_cap}"
+            seller_offer = AgentOfferSchema(
+                price=compromise_price,
+                timeline_days=seller_timeline,
+                fx_strategy=FXStrategy.LOCKED_AT_SIGNING,
+                milestones=[],
+                summary=f"${compromise_price:,.2f} {req.base_currency} | {seller_timeline} Days | NO_DEAL",
+            )
+            seller_msg = NegotiationMessageSchema(
+                round_number=1,
+                sender="seller_agent",
+                sender_label="Seller Agent (DevStudio AI)",
+                reasoning=(
+                    f"Seller best price ${compromise_price:,.2f} exceeds buyer hard cap ${effective_buyer_cap:,.2f}. "
+                    f"Terms are irreconcilable under user-enforced limits. Terminating with NO_DEAL."
+                ),
+                message=f"NO_DEAL: {termination_reason}. Parties have walked away.",
+                offer=seller_offer,
+                timestamp=datetime.utcnow(),
+            )
+            round_obj = NegotiationRoundSchema(
+                round_number=1,
+                buyer_turn=buyer_msg,
+                seller_turn=seller_msg,
+                price_gap=round(abs(compromise_price - buyer_suggested_price), 2),
+                status="no_deal",
+            )
+            return [round_obj], [buyer_msg, seller_msg], None, model_used, termination_reason
+
         seller_offer = AgentOfferSchema(
             price=compromise_price,
             timeline_days=round((buyer_timeline + seller_timeline) / 2),
@@ -399,7 +481,7 @@ class NegotiatorService:
             sender_label="Seller Agent (DevStudio AI)",
             reasoning=(
                 f"Quick Mode single-round adjustment. Client trust score is {client_trust:.1f}/100. "
-                f"Initial gap is {initial_gap_pct:.1f}% (within 40% threshold). Meeting at equitable consensus "
+                f"Initial gap is {initial_gap_pct:.1f}% (within {req.walk_away_gap_pct:.1f}% threshold). Meeting at equitable consensus "
                 f"${compromise_price:,.2f} {req.base_currency} with LOCKED_AT_SIGNING FX guarantee."
             ),
             message=(
@@ -451,12 +533,11 @@ class NegotiatorService:
         client_trust: float,
         developer_trust: float,
         previous_seller_msg: Optional[NegotiationMessageSchema],
+        has_buyer_cap: bool = False,
+        effective_buyer_cap: float = 0.0,
     ) -> NegotiationMessageSchema:
         if round_num == 1:
             price = buyer_budget
-            if developer_trust >= 75:
-                # Trust bonus: start slightly higher for reputable freelancer
-                price = round(buyer_budget * 1.05, 2)
             timeline = buyer_timeline
             fx_strategy = FXStrategy.LOCKED_AT_SIGNING
             reasoning = (
@@ -488,6 +569,9 @@ class NegotiatorService:
             fx_strategy = FXStrategy.LOCKED_AT_SIGNING
             reasoning = f"Consensus round reached. Converging onto compromise price ${price:,.2f} {base_currency}."
             message = f"We are ready to close at ${price:,.2f} {base_currency} over {timeline} days with LOCKED_AT_SIGNING."
+
+        if has_buyer_cap and effective_buyer_cap > 0:
+            price = min(price, effective_buyer_cap)
 
         milestones = [
             {"title": "Core Architecture & Scaffolding", "percentage": 0.30, "amount": round(price * 0.30, 2)},
@@ -526,6 +610,7 @@ class NegotiatorService:
         client_trust: float,
         developer_trust: float,
         buyer_msg: NegotiationMessageSchema,
+        effective_seller_floor: Optional[float] = None,
     ) -> NegotiationMessageSchema:
         buyer_price = buyer_msg.offer.price
         gap_pct = (abs(seller_ask - buyer_price) / buyer_budget * 100.0) if buyer_budget > 0 else 0.0
@@ -554,6 +639,9 @@ class NegotiatorService:
             fx_strategy = FXStrategy.LOCKED_AT_SIGNING
             reasoning = f"Buyer offered ${buyer_price:,.2f}. Reaching mutual profitability. Confirming agreement."
             message = f"Deal confirmed! We accept ${counter_price:,.2f} {base_currency} over {timeline} days."
+
+        if effective_seller_floor is not None:
+            counter_price = max(counter_price, effective_seller_floor)
 
         milestones = [
             {"title": "Core Architecture & Scaffolding", "percentage": 0.30, "amount": round(counter_price * 0.30, 2)},
