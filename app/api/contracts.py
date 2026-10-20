@@ -11,9 +11,11 @@ from app.schemas.contract import (
     ContractCreateSchema,
     ContractResponseSchema,
     LedgerEntryResponseSchema,
+    PostStakeRequest,
 )
 from app.services.contract_service import contract_service
 from app.services.ledger_service import ledger_service
+from app.services.stake_service import stake_service
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/contracts", tags=["Contracts"])
@@ -23,6 +25,26 @@ class FundContractPayload(BaseModel):
     paypal_order_id: str
     paypal_capture_id: Optional[str] = None
     idempotency_key: Optional[str] = None
+
+
+def is_client(contract: Contract, user: User) -> bool:
+    if user.role in ("admin", "system"):
+        return True
+    if contract.client_id and contract.client_id == user.id:
+        return True
+    if user.email and contract.client_email and contract.client_email.lower() == user.email.lower():
+        return True
+    return False
+
+
+def is_freelancer(contract: Contract, user: User) -> bool:
+    if user.role in ("admin", "system"):
+        return True
+    if contract.freelancer_id and contract.freelancer_id == user.id:
+        return True
+    if user.email and contract.developer_email and contract.developer_email.lower() == user.email.lower():
+        return True
+    return False
 
 
 def check_contract_access(contract: Contract, user: User) -> None:
@@ -137,6 +159,11 @@ async def fund_contract(
         raise HTTPException(status_code=404, detail="Contract not found")
 
     check_contract_access(contract, current_user)
+    if not is_client(contract, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only the client can fund the escrow.",
+        )
 
     return await contract_service.fund_contract(
         db=db,
@@ -145,6 +172,43 @@ async def fund_contract(
         paypal_capture_id=payload.paypal_capture_id,
         idempotency_key=payload.idempotency_key,
     )
+
+
+@router.post("/{contract_id}/stake", response_model=ContractResponseSchema)
+async def post_contract_stake(
+    contract_id: str,
+    payload: PostStakeRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Freelancer posts security deposit stake when accepting a contract.
+    Enforces new-account friction rules (10% stake or >= 1 completed deal for contracts >= $1,000).
+    """
+    contract = db.query(Contract).filter(Contract.id == contract_id).first()
+    if not contract:
+        raise HTTPException(status_code=404, detail="Contract not found")
+
+    check_contract_access(contract, current_user)
+    if not is_freelancer(contract, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only the assigned developer/freelancer can post the security deposit stake.",
+        )
+
+    stake_service.post_stake(
+        db=db,
+        contract=contract,
+        freelancer=current_user,
+        paypal_order_id=payload.paypal_order_id,
+        paypal_capture_id=payload.paypal_capture_id,
+        offered_stake_percentage=payload.stake_percentage,
+        offered_stake_amount=payload.stake_amount,
+        idempotency_key=payload.idempotency_key,
+    )
+    contract_service._attach_trust_scores(contract)
+    db.refresh(contract)
+    return contract
 
 
 @router.get("/{contract_id}/ledger", response_model=List[LedgerEntryResponseSchema])

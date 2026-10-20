@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from typing import Dict, Any
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from app.models.contract import Contract
 from app.models.milestone import Milestone
@@ -24,6 +25,32 @@ class DisputeService:
         reason: str,
         description: str,
     ) -> DisputeRecord:
+        # Hostile QA Hardening: Reject invalid or abusive disputes
+        if milestone.status == MilestoneStatus.RELEASED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot dispute an already released milestone. Funds have already been paid out.",
+            )
+        if milestone.status == MilestoneStatus.DISPUTED:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Milestone already has an active open dispute.",
+            )
+        if milestone.status == MilestoneStatus.PENDING:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Cannot dispute an unfunded milestone.",
+            )
+        existing_open = db.query(DisputeRecord).filter(
+            DisputeRecord.milestone_id == milestone.id,
+            DisputeRecord.status == DisputeStatus.OPEN,
+        ).first()
+        if existing_open:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Milestone already has an active open dispute.",
+            )
+
         # Build self-documenting dispute evidence bundle
         evidence_bundle = self._build_evidence_bundle(contract, milestone, initiator_role, reason, description)
 
@@ -82,10 +109,13 @@ class DisputeService:
         from app.services.ledger_service import ledger_service
         from app.models.enums import LedgerEntryType
         from app.services.reputation_service import reputation_service
+        from app.services.stake_service import stake_service
 
         if resolution_status == DisputeStatus.RESOLVED_DEVELOPER_PAYOUT:
             milestone.status = MilestoneStatus.RELEASED
             milestone.released_at = datetime.now(timezone.utc)
+            # Reputation with Economic Skin: Stake returned to freelancer upon winning dispute
+            stake_service.return_stake(db, contract.id, dispute_id=dispute.id)
         elif resolution_status == DisputeStatus.RESOLVED_CLIENT_REFUND:
             # Write ledger entry FIRST
             ledger_service.record_entry(
@@ -99,6 +129,8 @@ class DisputeService:
                 idempotency_key=f"refund_{dispute.id}",
             )
             milestone.status = MilestoneStatus.CANCELLED if hasattr(MilestoneStatus, "CANCELLED") else MilestoneStatus.PENDING
+            # Reputation with Economic Skin: Stake slashed upon losing dispute
+            stake_service.slash_stake(db, contract.id, dispute_id=dispute.id)
 
         # Update reputation based on arbitration decision
         reputation_service.record_dispute_resolution(

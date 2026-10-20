@@ -15,7 +15,7 @@ from app.schemas.milestone import (
 from typing import List
 from app.services.contract_service import contract_service
 from app.api.deps import get_current_user
-from app.api.contracts import check_contract_access
+from app.api.contracts import check_contract_access, is_client, is_freelancer
 
 router = APIRouter(prefix="/milestones", tags=["Milestones"])
 
@@ -61,6 +61,11 @@ async def submit_milestone(
     if not milestone:
         raise HTTPException(status_code=404, detail="Milestone not found")
     check_contract_access(milestone.contract, current_user)
+    if not is_freelancer(milestone.contract, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only the assigned developer/freelancer can submit milestone deliverables.",
+        )
     return await contract_service.submit_milestone(db, milestone_id, req)
 
 
@@ -78,6 +83,11 @@ async def verify_milestone(
     if not milestone:
         raise HTTPException(status_code=404, detail="Milestone not found")
     check_contract_access(milestone.contract, current_user)
+    if req.override_score is not None and not is_client(milestone.contract, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only the client can provide a manual verification override score.",
+        )
     return await contract_service.verify_milestone(
         db,
         milestone_id,
@@ -101,6 +111,11 @@ async def release_milestone(
     if not milestone:
         raise HTTPException(status_code=404, detail="Milestone not found")
     check_contract_access(milestone.contract, current_user)
+    if not is_client(milestone.contract, current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Only the client can release milestone funds.",
+        )
     return await contract_service.release_milestone(db, milestone_id, req)
 
 
