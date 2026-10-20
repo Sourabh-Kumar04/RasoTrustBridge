@@ -250,9 +250,17 @@ Addressed all architectural and structural flaws identified by payment systems m
 3. **Event-Sourced Financial Ledger**: Built immutable, append-only `LedgerEntry` model enforcing append-only semantics. Every financial movement writes a ledger record first; state is derived from ledger events. Added `scripts/reconcile.py` for automated reconciliation auditing against payment gateway records.
 4. **Buyer Timeout & Auto-Release**: Added `milestone.expires_at` (configurable per contract via `buyer_timeout_days`, default 7 days after submission). Added maintenance endpoint `POST /api/v1/milestones/check-expiry` that auto-transitions expired submissions to `VERIFIED` with audit log `"auto-released: buyer timeout"`.
 5. **Reputation & Trust Score**: Implemented dynamic `User.trust_score` (0-100, default 50.0), `completed_deals`, and `disputed_deals`. Weighted scoring updates on releases (+5), disputes (-10), and arbitrations (+/-5). Displayed on user profiles, contract views, and injected into negotiator reasoning.
-6. **Negotiator Walk-Away & Quick Mode**: Agents terminate with `NO_DEAL` if terms are irreconcilable (price gap > 40% or 3 rounds with zero movement). Added single-round "Quick Mode" (term suggestion + adjustment) as the default mode.
-7. **FX Simplification**: Standardized `LOCKED_AT_SIGNING` as primary UI default, de-emphasizing floating modes as advanced options.
-8. **Swappable AI Provider**: Abstract `AIProvider` interface supporting local `OllamaProvider` (zero-config default) and `OpenAIProvider` (via `OPENAI_API_KEY`).
+6. **Harmer's Graduated Staking & Symmetric Deposit**: Replaced flat 5% collateral with Harmer's 4-tier graduated model:
+   - *New accounts (< 7d OR 0 deals)*: 10% collateral
+   - *Emerging (1-4 deals, 0 lost disputes)*: 7% collateral
+   - *Established (5-19 deals, dispute-loss rate < 10%)*: 4% collateral
+   - *Proven (20+ deals, dispute-loss rate < 5%)*: 2% collateral
+   - *Symmetric Client Deposit*: Client matches 50% of freelancer stake at acceptance (`ClientDeposit`). Forfeited to freelancer on frivolous buyer disputes; returned on normal completion or valid dispute.
+   - *Partial Slash Only*: 50% default slash (25-75% configurable), unslashed remainder returned to freelancer, full slash strictly prohibited (`slash_pct < 100`). Slashed funds awarded directly to wronged client.
+   - *Neutral Arbiter*: Contested disputes resolved via `POST /api/v1/disputes/{id}/resolve` restricted to admin/arbiter role, preventing unilateral buyer cancellation. Full design doc: [`docs/STAKING_GRADUATED_MODEL.md`](docs/STAKING_GRADUATED_MODEL.md).
+7. **Negotiator Walk-Away & Quick Mode**: Agents terminate with `NO_DEAL` if terms are irreconcilable (price gap > 40% or 3 rounds with zero movement). Added single-round "Quick Mode" (term suggestion + adjustment) as the default mode.
+8. **FX Simplification**: Standardized `LOCKED_AT_SIGNING` as primary UI default, de-emphasizing floating modes as advanced options.
+9. **Swappable AI Provider**: Abstract `AIProvider` interface supporting local `OllamaProvider` (zero-config default) and `OpenAIProvider` (via `OPENAI_API_KEY`).
 
 ### Running the Financial Ledger Reconciliation Script
 ```bash

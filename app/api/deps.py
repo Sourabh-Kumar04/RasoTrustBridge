@@ -74,3 +74,15 @@ async def get_optional_current_user(
         return await get_current_user(request, db, credentials)
     except HTTPException:
         return None
+
+
+async def require_admin_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Restricts access to platform administrators or system service accounts."""
+    if current_user.role not in ("admin", "system"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: Admin role required for dispute arbitration.",
+        )
+    return current_user
