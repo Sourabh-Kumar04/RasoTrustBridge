@@ -114,21 +114,49 @@ async def paypal_webhook(
     request: Request,
     db: Session = Depends(get_db),
     paypal_transmission_id: Optional[str] = Header(None, alias="paypal-transmission-id"),
+    paypal_transmission_sig: Optional[str] = Header(None, alias="paypal-transmission-sig"),
 ):
     """
     Listens for PayPal sandbox webhook events (e.g. PAYMENT.CAPTURE.COMPLETED, CHECKOUT.ORDER.APPROVED).
     Deduplicates events by transmission/event ID with 200 response.
+    Cryptographically verifies PAYPAL-TRANSMISSION-SIG header, rejecting invalid signatures with 401.
     """
-    try:
-        raw_body = await request.body()
-        payload = {}
-        if raw_body:
-            import json
-            try:
-                payload = json.loads(raw_body.decode("utf-8"))
-            except Exception:
-                pass
+    import logging
+    logger = logging.getLogger("trustbridge.paypal")
 
+    raw_body = await request.body()
+    payload = {}
+    if raw_body:
+        import json
+        try:
+            payload = json.loads(raw_body.decode("utf-8"))
+        except Exception:
+            pass
+
+    # 1. Cryptographic Signature Verification
+    sig_result = await paypal_client.verify_webhook_signature(
+        raw_body=raw_body,
+        headers=dict(request.headers),
+        payload=payload,
+    )
+
+    if sig_result is False:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or forged PayPal webhook signature",
+        )
+    elif sig_result is None:
+        if paypal_client.is_configured:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Missing PAYPAL-TRANSMISSION-SIG header",
+            )
+        else:
+            logger.warning(
+                "PayPal webhook received without PAYPAL-TRANSMISSION-SIG signature header in mock mode."
+            )
+
+    try:
         delivery_id = paypal_transmission_id or payload.get("id")
         event_type = payload.get("event_type")
         resource_id = payload.get("resource", {}).get("id")
@@ -155,5 +183,7 @@ async def paypal_webhook(
             "resource_id": resource_id,
             "delivery_id": delivery_id,
         }
+    except HTTPException:
+        raise
     except Exception:
         return Response(status_code=200)

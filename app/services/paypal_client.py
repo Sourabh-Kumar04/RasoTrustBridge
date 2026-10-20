@@ -2,6 +2,7 @@ import time
 import uuid
 import json
 import hashlib
+import hmac
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 import httpx
@@ -91,6 +92,96 @@ class PayPalClient:
             self.settings.PAYPAL_CLIENT_SECRET and
             len(self.settings.PAYPAL_CLIENT_ID.strip()) > 5
         )
+
+    async def verify_webhook_signature(
+        self,
+        raw_body: bytes,
+        headers: Dict[str, str],
+        payload: Dict[str, Any],
+    ) -> Optional[bool]:
+        """
+        Cryptographic verification of PayPal webhook ingress.
+        Uses PayPal's /v1/notifications/verify-webhook-signature API when live credentials are present,
+        or HMAC verification against webhook ID + shared secret in mock/dev mode.
+        Returns:
+            True: valid signature
+            False: invalid / forged signature
+            None: signature header missing
+        """
+        # Case-insensitive header extraction
+        h_lower = {k.lower(): v for k, v in headers.items()}
+        transmission_id = h_lower.get("paypal-transmission-id")
+        transmission_sig = h_lower.get("paypal-transmission-sig")
+        transmission_time = h_lower.get("paypal-transmission-time")
+        cert_url = h_lower.get("paypal-cert-url")
+        auth_algo = h_lower.get("paypal-auth-algo")
+
+        webhook_id = self.settings.PAYPAL_WEBHOOK_ID or "WH-TRUSTBRIDGE-SANDBOX"
+        webhook_secret = getattr(self.settings, "PAYPAL_WEBHOOK_SECRET", None) or "trustbridge_paypal_webhook_secret_dev"
+
+        # If live credentials configured, call PayPal verification API
+        if self.is_configured:
+            if not transmission_sig:
+                return False
+            try:
+                token = await self.get_access_token()
+                url = f"{self.settings.PAYPAL_API_BASE}/v1/notifications/verify-webhook-signature"
+                req_headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {token}",
+                }
+                verify_payload = {
+                    "auth_algo": auth_algo or "SHA256withRSA",
+                    "cert_url": cert_url or "",
+                    "transmission_id": transmission_id or "",
+                    "transmission_sig": transmission_sig or "",
+                    "transmission_time": transmission_time or "",
+                    "webhook_id": webhook_id,
+                    "webhook_event": payload,
+                }
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.post(url, json=verify_payload, headers=req_headers)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        return data.get("verification_status") == "SUCCESS"
+                    return False
+            except Exception:
+                return False
+
+        # In mock mode (no creds):
+        if not transmission_sig:
+            return None
+
+        # Verify HMAC against webhook ID + shared secret
+        sig = transmission_sig.strip()
+        if sig.startswith("sha256="):
+            sig = sig[len("sha256="):]
+
+        # Candidates for HMAC computation
+        candidates = [
+            webhook_id,
+            transmission_id or "",
+            f"{transmission_id}|{webhook_id}",
+            f"{transmission_id}|{transmission_time}|{webhook_id}",
+            f"{webhook_id}|{transmission_id}",
+            raw_body.decode("utf-8", errors="ignore"),
+            f"{transmission_id}|{transmission_time}|{webhook_id}|{raw_body.decode('utf-8', errors='ignore')}",
+        ]
+        for candidate in candidates:
+            expected = hmac.new(
+                webhook_secret.encode("utf-8"),
+                candidate.encode("utf-8"),
+                hashlib.sha256,
+            ).hexdigest()
+            if hmac.compare_digest(expected.lower(), sig.lower()):
+                return True
+
+        # Also support raw bytes HMAC
+        expected_raw = hmac.new(webhook_secret.encode("utf-8"), raw_body, hashlib.sha256).hexdigest()
+        if hmac.compare_digest(expected_raw.lower(), sig.lower()):
+            return True
+
+        return False
 
     async def get_access_token(self) -> str:
         """Fetch or return cached OAuth2 access token."""

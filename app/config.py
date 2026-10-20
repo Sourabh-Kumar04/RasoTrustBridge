@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     PAYPAL_CLIENT_SECRET: Optional[str] = None
     PAYPAL_MODE: str = "sandbox"
     PAYPAL_API_BASE: str = "https://api-m.sandbox.paypal.com"
-    PAYPAL_WEBHOOK_ID: Optional[str] = None
+    PAYPAL_WEBHOOK_ID: Optional[str] = "WH-TRUSTBRIDGE-DEV-001"
+    PAYPAL_WEBHOOK_SECRET: Optional[str] = "trustbridge_paypal_webhook_secret_dev"
 
     # GitHub Webhook Secret
     GITHUB_WEBHOOK_SECRET: Optional[str] = "trustbridge_github_webhook_secret_dev"
