@@ -86,11 +86,37 @@ async def create_contract(
     parties, currency pairs, and FX risk strategy.
     Links the contract to the authenticated user's ID.
     """
-    # Link current user ID if not explicitly specified
-    if current_user.role == "client" and not req.client_id:
-        req.client_id = current_user.id
-    elif current_user.role == "freelancer" and not req.freelancer_id:
-        req.freelancer_id = current_user.id
+    # Ownership verification: client_id must match current_user.id (or user must have admin role) (SEC-04)
+    if current_user.role not in ("admin", "system"):
+        if req.client_id and req.client_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Forbidden: client_id must match authenticated user ID.",
+            )
+        if current_user.role == "client":
+            req.client_id = current_user.id
+            if req.client_email and current_user.email and req.client_email.strip().lower() != current_user.email.strip().lower():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Forbidden: client_email must match authenticated user email.",
+                )
+            if not req.client_email:
+                req.client_email = current_user.email
+        elif current_user.role == "freelancer":
+            if req.freelancer_id and req.freelancer_id != current_user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Forbidden: freelancer_id must match authenticated user ID.",
+                )
+            req.freelancer_id = current_user.id
+            if not req.developer_email and current_user.email:
+                req.developer_email = current_user.email
+    else:
+        # Admin / system user can specify or default
+        if current_user.role == "client" and not req.client_id:
+            req.client_id = current_user.id
+        elif current_user.role == "freelancer" and not req.freelancer_id:
+            req.freelancer_id = current_user.id
 
     return await contract_service.create_contract(db, req)
 
