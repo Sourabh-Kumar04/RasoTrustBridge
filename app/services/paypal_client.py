@@ -27,63 +27,71 @@ class PayPalClient:
         self._token_expires_at: float = 0.0
         self._idempotency_store: Dict[str, Dict[str, Any]] = {}
 
-    def _check_db_idempotency(self, key: str) -> Optional[Dict[str, Any]]:
+    def _check_db_idempotency(self, key: str, db: Optional[Any] = None) -> Optional[Dict[str, Any]]:
         """Checks persistent database idempotency store."""
+        should_close = False
         try:
-            db = SessionLocal()
-            try:
-                rec = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).first()
-                if rec:
-                    if rec.expires_at:
-                        now = datetime.now(timezone.utc)
-                        exp = rec.expires_at
-                        if exp.tzinfo is None:
-                            exp = exp.replace(tzinfo=timezone.utc)
-                        if exp < now:
-                            return None
-                    if rec.response_json:
-                        cached = json.loads(rec.response_json)
-                        cached["idempotency_replayed"] = True
-                        return cached
-                    return {
-                        "idempotency_replayed": True,
-                        "key": rec.key,
-                        "response_hash": rec.response_hash,
-                    }
-                return None
-            finally:
-                db.close()
+            if db is None:
+                db = SessionLocal()
+                should_close = True
+            rec = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).first()
+            if rec:
+                if rec.expires_at:
+                    now = datetime.now(timezone.utc)
+                    exp = rec.expires_at
+                    if exp.tzinfo is None:
+                        exp = exp.replace(tzinfo=timezone.utc)
+                    if exp < now:
+                        return None
+                if rec.response_json:
+                    cached = json.loads(rec.response_json)
+                    cached["idempotency_replayed"] = True
+                    return cached
+                return {
+                    "idempotency_replayed": True,
+                    "key": rec.key,
+                    "response_hash": rec.response_hash,
+                }
+            return None
         except Exception:
             return None
-
-    def _save_db_idempotency(self, key: str, response: Dict[str, Any], expires_seconds: int = 86400) -> None:
-        """Persists idempotency key and response in database."""
-        try:
-            db = SessionLocal()
-            try:
-                now = datetime.now(timezone.utc)
-                resp_str = json.dumps(response, default=str)
-                resp_hash = hashlib.sha256(resp_str.encode("utf-8")).hexdigest()
-                rec = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).first()
-                if not rec:
-                    rec = IdempotencyRecord(
-                        key=key,
-                        response_hash=resp_hash,
-                        response_json=resp_str,
-                        created_at=now,
-                        expires_at=now + timedelta(seconds=expires_seconds),
-                    )
-                    db.add(rec)
-                else:
-                    rec.response_hash = resp_hash
-                    rec.response_json = resp_str
-                db.commit()
-            except Exception:
-                db.rollback()
-            finally:
+        finally:
+            if should_close and db is not None:
                 db.close()
+
+    def _save_db_idempotency(self, key: str, response: Dict[str, Any], expires_seconds: int = 86400, db: Optional[Any] = None) -> None:
+        """Persists idempotency key and response in database."""
+        should_close = False
+        try:
+            if db is None:
+                db = SessionLocal()
+                should_close = True
+            now = datetime.now(timezone.utc)
+            resp_str = json.dumps(response, default=str)
+            resp_hash = hashlib.sha256(resp_str.encode("utf-8")).hexdigest()
+            rec = db.query(IdempotencyRecord).filter(IdempotencyRecord.key == key).first()
+            if not rec:
+                rec = IdempotencyRecord(
+                    key=key,
+                    response_hash=resp_hash,
+                    response_json=resp_str,
+                    created_at=now,
+                    expires_at=now + timedelta(seconds=expires_seconds),
+                )
+                db.add(rec)
+            else:
+                rec.response_hash = resp_hash
+                rec.response_json = resp_str
+            db.commit()
         except Exception:
-            pass
+            if db is not None:
+                try:
+                    db.rollback()
+                except Exception:
+                    pass
+        finally:
+            if should_close and db is not None:
+                db.close()
 
     @property
     def is_configured(self) -> bool:
@@ -214,6 +222,7 @@ class PayPalClient:
         return_url: str = "https://trustbridge.network/checkout/success",
         cancel_url: str = "https://trustbridge.network/checkout/cancel",
         idempotency_key: Optional[str] = None,
+        db: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Creates a PayPal Order to hold / authorize funds in escrow.
@@ -225,7 +234,7 @@ class PayPalClient:
             cached["idempotency_replayed"] = True
             return cached
 
-        db_cached = self._check_db_idempotency(idem_key)
+        db_cached = self._check_db_idempotency(idem_key, db=db)
         if db_cached is not None:
             self._idempotency_store[idem_key] = db_cached
             return db_cached
@@ -242,7 +251,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
-            self._save_db_idempotency(idem_key, res)
+            self._save_db_idempotency(idem_key, res, db=db)
             return res
 
         token = await self.get_access_token()
@@ -294,13 +303,14 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
-            self._save_db_idempotency(idem_key, res)
+            self._save_db_idempotency(idem_key, res, db=db)
             return res
 
     async def capture_order(
         self,
         order_id: str,
         idempotency_key: Optional[str] = None,
+        db: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Captures previously approved order into escrow balance.
@@ -312,7 +322,7 @@ class PayPalClient:
             cached["idempotency_replayed"] = True
             return cached
 
-        db_cached = self._check_db_idempotency(idem_key)
+        db_cached = self._check_db_idempotency(idem_key, db=db)
         if db_cached is not None:
             self._idempotency_store[idem_key] = db_cached
             return db_cached
@@ -328,7 +338,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
-            self._save_db_idempotency(idem_key, res)
+            self._save_db_idempotency(idem_key, res, db=db)
             return res
 
         token = await self.get_access_token()
@@ -367,7 +377,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
-            self._save_db_idempotency(idem_key, res)
+            self._save_db_idempotency(idem_key, res, db=db)
             return res
 
     async def create_payout(
@@ -378,6 +388,7 @@ class PayPalClient:
         note: str = "TrustBridge Milestone Release",
         sender_item_id: str = "",
         idempotency_key: Optional[str] = None,
+        db: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
         Releases funds to international freelancer via PayPal Payouts API.
@@ -390,7 +401,7 @@ class PayPalClient:
             cached["idempotency_replayed"] = True
             return cached
 
-        db_cached = self._check_db_idempotency(idem_key)
+        db_cached = self._check_db_idempotency(idem_key, db=db)
         if db_cached is not None:
             self._idempotency_store[idem_key] = db_cached
             return db_cached
@@ -409,7 +420,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
-            self._save_db_idempotency(idem_key, res)
+            self._save_db_idempotency(idem_key, res, db=db)
             return res
 
         token = await self.get_access_token()
@@ -456,7 +467,7 @@ class PayPalClient:
                 "idempotency_key": idem_key,
             }
             self._idempotency_store[idem_key] = res
-            self._save_db_idempotency(idem_key, res)
+            self._save_db_idempotency(idem_key, res, db=db)
             return res
 
 

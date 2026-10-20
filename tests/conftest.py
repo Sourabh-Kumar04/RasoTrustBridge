@@ -26,6 +26,8 @@ test_engine = create_engine(
     poolclass=StaticPool,
 )
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+from app.database import SessionLocal as AppSessionLocal
+AppSessionLocal.configure(bind=test_engine)
 
 
 @pytest.fixture(scope="function")
