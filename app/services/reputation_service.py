@@ -12,7 +12,7 @@ logger = logging.getLogger("trustbridge.reputation")
 class ReputationService:
     """
     Weighted Reputation, Trust Scoring, and Economic Friction Engine.
-    Directly addresses mentor critique: 'every deal starts at zero trust' and Harmer's critique:
+    Directly addresses mentor critique: 'every deal starts at zero trust' and the graduated-stake critique:
     'a bad actor's cost to create a new account and rerun a scam is near zero'.
 
     Trust Score Bounds: [0.0, 100.0].
@@ -99,7 +99,7 @@ class ReputationService:
     ) -> Tuple[bool, float, Optional[str]]:
         """
         Validates freelancer eligibility and calculates required stake percentage
-        using Harmer's graduated reputation model.
+        using graduated reputation model.
         Returns: (is_eligible, required_stake_percentage, error_message_if_any)
         """
         required_stake = self.calculate_graduated_stake_percentage(freelancer)

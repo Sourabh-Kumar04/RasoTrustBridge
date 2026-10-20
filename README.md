@@ -23,21 +23,18 @@ Cross-border freelance commerce is plagued by a fundamental trust deficit:
 
 ---
 
-## 2. The Mentor Triad & Architectural Principles
+## 2. Architectural Principles
 
-TrustBridge is engineered based on three core insights from payments and marketplace veterans:
+TrustBridge is engineered around three core architectural principles:
 
-1. **Chase Harmer (Payments Founder)** — *Layered Trust & PayPal Extension*:
-   > *"Hackathon winners extend PayPal. Losers build a chatbot that happens to mention PayPal. Trust must be layered: acceptance criteria upfront, multi-source verification, dispute fallback, reputation staking."*
-   - **Implementation**: TrustBridge does not replace PayPal; it extends PayPal. Funds remain safely held inside PayPal's regulated infrastructure via the **Orders API (`intent=CAPTURE`)**. Releases occur via the **Payouts API (`/v1/payments/payouts`)**. Every milestone transition generates an immutable audit record linking PayPal transaction IDs (`order_id`, `capture_id`, `payout_batch_id`) with cryptographic evidence.
+1. **Layered Trust & PayPal Extension**
+   -  TrustBridge does not replace PayPal; it extends PayPal. Funds remain safely held inside PayPal's regulated infrastructure via the **Orders API (`intent=CAPTURE`)**. Releases occur via the **Payouts API (`/v1/payments/payouts`)**. Every milestone transition generates an immutable audit record linking PayPal transaction IDs (`order_id`, `capture_id`, `payout_batch_id`) with cryptographic evidence.
 
-2. **Daniel Yubi (Stripe)** — *Programmable Trust, Narrowed to Code*:
-   > *"Frame as 'programmable trust layer' not 'escrow with AI trim'. Narrow to code delivery first (GitHub verifiable)."*
-   - **Implementation**: TrustBridge contracts are not loose prose. Milestones define strict, testable criteria (`code_delivery`, `github_pr`, `test_suite`, `manual_review`). The verification engine evaluates PR validity, commit SHAs, and automated test pass ratios (`tests_passed / tests_total == 1.0`) before authorizing fund disbursement.
+2. **Programmable Trust, Narrowed to Code**
+   -  TrustBridge contracts are not loose prose. Milestones define strict, testable criteria (`code_delivery`, `github_pr`, `test_suite`, `manual_review`). The verification engine evaluates PR validity, commit SHAs, and automated test pass ratios (`tests_passed / tests_total == 1.0`) before authorizing fund disbursement.
 
-3. **Sahil Lavingia (Gumroad)** — *Reducing PayPal's Support Cost*:
-   > *"Sounds like a feature, not a company — the win is showing how AI reduces PayPal's support cost."*
-   - **Implementation**: In traditional payments, subjective disputes take weeks of manual support agent intervention. When a milestone in TrustBridge is contested, the **Dispute Protocol** automatically generates a standardized, tamper-evident **Dispute Evidence Dossier** (`TrustBridge-Evidence-v1`). The dossier bundles the signed brief, milestone acceptance criteria, git commit SHAs, test logs, AI verification scores, and PayPal transaction references—enabling instant, programmatic arbitration and cutting PayPal dispute handling overhead by up to 90%.
+3. **Reducing Payment Support Cost**
+   -  In traditional payments, subjective disputes take weeks of manual support agent intervention. When a milestone in TrustBridge is contested, the **Dispute Protocol** automatically generates a standardized, tamper-evident **Dispute Evidence Dossier** (`TrustBridge-Evidence-v1`). The dossier bundles the signed brief, milestone acceptance criteria, git commit SHAs, test logs, AI verification scores, and PayPal transaction references—enabling instant, programmatic arbitration and cutting PayPal dispute handling overhead by up to 90%.
 
 ---
 
@@ -243,14 +240,14 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ---
 
-### Phase 5: Production Hardening & Mentor Flaw Remediation (Delivered)
-Addressed all architectural and structural flaws identified by payment systems mentors:
+### Phase 5: Production Hardening (Delivered)
+Addressed all architectural and structural flaws:
 1. **PostgreSQL as Default**: Replaced SQLite WAL default with PostgreSQL via `DATABASE_URL` (SQLite retained solely as local dev fallback). Comprehensive Alembic migrations for all database models (`alembic upgrade head`). Updated `docker-compose.yml`, `docs/DEPLOYMENT.md`, and `.env.example`.
 2. **Idempotency & Webhook Deduplication**: Added `idempotency_key` columns across all money-movement records (`EscrowHold`, `Milestone`, `LedgerEntry`). Generated idempotency keys for all PayPal calls (`PayPal-Request-Id`). Implemented persistent webhook deduplication for GitHub (`X-GitHub-Delivery`) and PayPal (`paypal-transmission-id`), returning HTTP 200 on duplicates without reprocessing.
 3. **Event-Sourced Financial Ledger**: Built immutable, append-only `LedgerEntry` model enforcing append-only semantics. Every financial movement writes a ledger record first; state is derived from ledger events. Added `scripts/reconcile.py` for automated reconciliation auditing against payment gateway records.
 4. **Buyer Timeout & Auto-Release**: Added `milestone.expires_at` (configurable per contract via `buyer_timeout_days`, default 7 days after submission). Added maintenance endpoint `POST /api/v1/milestones/check-expiry` that auto-transitions expired submissions to `VERIFIED` with audit log `"auto-released: buyer timeout"`.
 5. **Reputation & Trust Score**: Implemented dynamic `User.trust_score` (0-100, default 50.0), `completed_deals`, and `disputed_deals`. Weighted scoring updates on releases (+5), disputes (-10), and arbitrations (+/-5). Displayed on user profiles, contract views, and injected into negotiator reasoning.
-6. **Harmer's Graduated Staking & Symmetric Deposit**: Replaced flat 5% collateral with Harmer's 4-tier graduated model:
+6. **Graduated Staking & Symmetric Deposit**: Replaced flat 5% collateral with a 4-tier graduated model:
    - *New accounts (< 7d OR 0 deals)*: 10% collateral
    - *Emerging (1-4 deals, 0 lost disputes)*: 7% collateral
    - *Established (5-19 deals, dispute-loss rate < 10%)*: 4% collateral

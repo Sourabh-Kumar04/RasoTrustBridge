@@ -165,7 +165,7 @@ class Stake(Base):
 
 class ClientDeposit(Base):
     """
-    Symmetric Client Good-Faith Deposit (Harmer's Graduated Model).
+    Symmetric Client Good-Faith Deposit (Graduated Stake Model).
     Client posts a matching good-faith deposit: 50% of the freelancer's stake amount.
     - Returned in full when the contract completes normally.
     - Returned in full if client opens a dispute and WINS (arbiter rules for client).

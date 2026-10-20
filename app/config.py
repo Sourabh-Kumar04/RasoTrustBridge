@@ -52,7 +52,7 @@ class Settings(BaseSettings):
     FX_RATES_API_URL: str = "https://open.er-api.com/v6/latest/USD"
     FX_CACHE_TTL_SECONDS: int = 3600
 
-    # Harmer's Graduated Staking & Dispute Protocol
+    # Graduated Staking & Dispute Protocol
     DEFAULT_STAKE_PERCENTAGE: float = 10.0  # Fallback baseline
     RATE_NEW_ACCOUNT: float = 10.0  # < 7 days OR 0 completed deals: 10%
     RATE_EMERGING: float = 7.0  # 1-4 completed deals, no lost disputes: 7%

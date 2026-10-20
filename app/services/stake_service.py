@@ -44,7 +44,7 @@ class StakeService:
         idempotency_key: Optional[str] = None,
     ) -> Stake:
         """
-        Posts freelancer security deposit / stake when accepting contract using Harmer's Graduated Model:
+        Posts freelancer security deposit / stake when accepting contract using Graduated Stake Model:
         - New accounts (< 7 days OR 0 completed deals): 10% of contract value
         - Emerging (1-4 completed deals, no lost disputes): 7%
         - Established (5-19 completed deals, dispute-loss rate < 10%): 4%
@@ -119,7 +119,7 @@ class StakeService:
             action="STAKE_POSTED",
             description=(
                 f"Freelancer security deposit posted: {contract.base_currency} {stake_amount:.2f} "
-                f"({stake_pct:.1f}% of {contract.total_amount:.2f}). Applied Harmer graduated rate."
+                f"({stake_pct:.1f}% of {contract.total_amount:.2f}). Applied graduated rate."
             ),
             metadata_json={
                 "stake_amount": stake_amount,
@@ -391,7 +391,7 @@ class StakeService:
     ) -> Optional[Stake]:
         """
         Slashes freelancer stake when client refund dispute is resolved against freelancer.
-        PARTIAL SLASH ONLY (Harmer's Model):
+        PARTIAL SLASH ONLY (Graduated Model):
         - Slashes 50% by default (configurable per contract, 25-75% range).
         - Full slash (100%+) is NEVER permitted: raises ValueError.
         - Unslashed remainder is always returned to the freelancer.

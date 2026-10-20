@@ -31,7 +31,7 @@ async def resolve_dispute_as_arbiter(
     admin_user: User = Depends(require_admin_user),
 ):
     """
-    Neutral Arbiter Dispute Resolution (Harmer's Model).
+    Neutral Arbiter Dispute Resolution (Graduated Model).
     
     Arbiter resolves a contested milestone dispute between client and freelancer.
     Restricted to admin role.

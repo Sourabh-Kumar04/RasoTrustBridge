@@ -459,7 +459,7 @@ const TrustBridgeApp = {
       } else if (typeof detailMsg === 'object' && detailMsg !== null) {
         detailMsg = JSON.stringify(detailMsg);
       }
-      // Lenny Rachitsky / Stripe: Calm human error messaging
+      // Calm human error messaging
       let humanMsg = detailMsg || 'The operation could not be completed.';
       if (res.status === 401) {
         humanMsg = 'Your session has expired. Please sign in again; all contracts and escrow vault funds remain completely safe.';
@@ -696,7 +696,7 @@ const TrustBridgeApp = {
       if (c.status === 'COMPLETED') badgeClass = 'badge-verified';
       if (c.status === 'DISPUTED') badgeClass = 'badge-disputed';
 
-      // Lenny Rachitsky: Living Waiting States (Never a blank pending badge)
+      // Living waiting states (never a blank pending badge)
       let livingStatus = `● In Progress — Waiting for deliverables from ${this.escapeHtml(c.developer_name)}, sent 2 days ago. Average response time: 1.4 days (Normal).`;
       const hasVerified = (c.milestones || []).some(m => m.status === 'VERIFIED');
       const hasSubmitted = (c.milestones || []).some(m => m.status === 'SUBMITTED');
@@ -713,7 +713,7 @@ const TrustBridgeApp = {
         livingStatus = `● Deliverables submitted by ${this.escapeHtml(c.developer_name)}. Automated test evaluator executing diff verification.`;
       }
 
-      // One clear high-impact action CTA per contract + John Zimmer receipt
+      // One clear high-impact action CTA per contract + receipt
       let actionCta = `<a href="#/contracts/${c.id}" class="btn-secondary text-xs">Inspect Dossier →</a>`;
       if (c.status === 'DRAFT') {
         actionCta = `<a href="#/contracts/${c.id}" class="btn-accent text-xs">Fund Escrow →</a>`;
@@ -730,7 +730,7 @@ const TrustBridgeApp = {
           <td>
             <div class="font-medium text-[#0C1A30] font-serif text-base">${this.escapeHtml(c.title)}</div>
             <div class="text-[11px] text-[#62718A] font-mono truncate max-w-xs mb-1.5">${this.escapeHtml(c.id)}</div>
-            <!-- LIVING STATUS BADGE (Lenny) -->
+            <!-- LIVING STATUS BADGE -->
             <div class="text-[11px] font-mono text-[#3F4D63] bg-[#F8F7F4] p-1.5 border border-[#E1E7EE] rounded-[2px] leading-tight">
               ${livingStatus}
             </div>
@@ -923,7 +923,7 @@ const TrustBridgeApp = {
     if (tabRoundsLabel) tabRoundsLabel.textContent = `${data.total_rounds} Rounds`;
     document.getElementById('neg-model-used-badge').textContent = `ARBITRATION ENGINE: ${data.model_used}`;
 
-    // Characters in a scene: Distinct voices, avatars, pacing (Julie Zhuo + Daniel Yubi)
+    // Agents as characters: distinct voices, avatars, pacing
     const firstRound = (data.rounds && data.rounds.length > 0) ? data.rounds[0] : null;
     const buyerSender = (firstRound && firstRound.buyer_turn && firstRound.buyer_turn.sender_label) ? firstRound.buyer_turn.sender_label : 'Buyer Agent';
     const sellerSender = (firstRound && firstRound.seller_turn && firstRound.seller_turn.sender_label) ? firstRound.seller_turn.sender_label : 'Seller Agent';
@@ -1379,7 +1379,7 @@ const TrustBridgeApp = {
 
       const payoutAmt = m.payout_amount ? `${c.payout_currency} ${m.payout_amount.toLocaleString('en-US', { maximumFractionDigits: 2 })}` : `≈ ${c.payout_currency} ${(m.amount * rate).toFixed(2)}`;
 
-      // Lenny Rachitsky: Living status per milestone
+      // Living status per milestone
       let livingMilestone = `Waiting for deliverable upload from ${this.escapeHtml(c.developer_name)}. Milestone funded. Normal completion window: 5-7 business days.`;
       if (m.status === 'SUBMITTED') {
         livingMilestone = `Deliverables submitted 3 hours ago with PR #2. Automated CI evaluator running diff verification (Normal review window: < 4 hours).`;
@@ -1413,7 +1413,7 @@ const TrustBridgeApp = {
 
           <p class="text-sm text-[#3F4D63] leading-relaxed font-light">${this.escapeHtml(m.description)}</p>
 
-          <!-- LIVING WAITING STATUS (Lenny) -->
+          <!-- LIVING WAITING STATUS -->
           <div class="living-badge w-full">
             <span class="living-pulse-dot"></span>
             <span>${livingMilestone}</span>
@@ -1483,7 +1483,7 @@ const TrustBridgeApp = {
               ` : ''}
             </div>
 
-            <!-- JOHN ZIMMER RECEIPT TRIGGER -->
+            <!-- RECEIPT TRIGGER -->
             <button onclick="TrustBridgeApp.openReceiptModal('${c.id}')" class="font-mono text-xs text-[#62718A] hover:text-[#0079C1] transition flex items-center space-x-1">
               <span>View Milestone Receipt</span>
               <span>↗</span>
