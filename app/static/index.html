@@ -50,35 +50,6 @@
   </script>
 </head>
 <body class="bg-[#F5F7FA] text-[#0C1A30] min-h-screen flex flex-col font-sans selection:bg-[#003087] selection:text-white">
-
-  <!-- ARCHITECTURAL STATUS BAR -->
-  <aside aria-label="System Status" class="w-full bg-[#FFFFFF] hairline-b text-xs py-2.5 px-6 flex flex-wrap items-center justify-between text-[#62718A] font-mono">
-    <div class="flex items-center space-x-6">
-      <div class="flex items-center space-x-2">
-        <span class="inline-block w-2 h-2 rounded-full bg-[#0D6832] animate-pulse"></span>
-        <span class="text-[#0C1A30] font-semibold tracking-wider text-[11px]">TB-CORE PROTOCOL OPERATIONAL</span>
-      </div>
-      <div class="hidden md:flex items-center space-x-2 text-[#3F4D63]">
-        <span>PAYPAL DUAL-CUSTODY:</span>
-        <span class="text-[#003087] font-semibold" id="status-paypal">ACTIVE SANDBOX</span>
-      </div>
-      <div class="hidden md:flex items-center space-x-2 text-[#3F4D63]">
-        <span>ARBITRATION ENGINE:</span>
-        <span class="text-[#003087] font-semibold" id="status-ollama">llama3.2:3b ONLINE</span>
-      </div>
-    </div>
-    <div class="flex items-center space-x-6">
-      <div class="flex items-center space-x-2">
-        <span>SPOT USD/INR:</span>
-        <span class="text-[#0C1A30] font-semibold" id="ticker-usdinr">84.50</span>
-      </div>
-      <a href="/docs" target="_blank" class="hover:text-[#003087] transition flex items-center space-x-1">
-        <span>API SPEC</span>
-        <span>&nearr;</span>
-      </a>
-    </div>
-  </aside>
-
   <!-- NAVIGATION -->
   <header class="w-full bg-[#FFFFFF] hairline-b sticky top-0 z-50 backdrop-blur-md bg-opacity-95 shadow-sm">
     <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
